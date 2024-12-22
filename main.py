@@ -75,13 +75,56 @@ SOCIAL_LINKS = {
 MINIGAME_COOLDOWNS = {}  # To prevent spam
 COOLDOWN_TIME = 30  # seconds between games
 
+SHOP_ITEMS = {
+    "puros_cookie": {
+        "name": "Puro's Cookie",
+        "price": 100,
+        "description": "A special cookie made by Puro himself! 🍪",
+        "emoji": "🍪"
+    },
+    "puro_hat": {
+        "name": "Puro's Hat",
+        "price": 500,
+        "description": "A stylish hat just like Puro's! 🎩",
+        "emoji": "🎩"
+    },
+    "crystal_shard": {
+        "name": "Crystal Shard",
+        "price": 300,
+        "description": "A shimmering piece of crystal! ✨",
+        "emoji": "💎"
+    },
+    "latex_mask": {
+        "name": "Latex Mask",
+        "price": 750,
+        "description": "A cute mask that looks like Puro! 🖤",
+        "emoji": "🎭"
+    },
+    "science_book": {
+        "name": "Laboratory Notes",
+        "price": 250,
+        "description": "Research notes from the facility! 📚",
+        "emoji": "📚"
+    }
+}
+
 class UserProfile:
     def __init__(self, user_id):
         self.user_id = user_id
         self.level = 1
         self.xp = 0
         self.puro_coins = 0
+        self.inventory = []  # List of item IDs
         self.last_game_time = 0
+
+    def add_item(self, item_id):
+        self.inventory.append(item_id)
+
+    def has_item(self, item_id):
+        return item_id in self.inventory
+
+    def can_afford(self, price):
+        return self.puro_coins >= price
 
 user_profiles = {}
 
@@ -292,6 +335,14 @@ async def help_command(interaction: discord.Interaction):
     `/guess` - Guess Puro's number (1-10)
     """
     embed.add_field(name="🎲 Minigames", value=games_cmds.strip(), inline=False)
+    
+    # Shop Commands
+    shop_cmds = """
+    `/shop` - Browse Puro's shop
+    `/buy` - Purchase items from the shop
+    `/inventory` - View your items
+    """
+    embed.add_field(name="🛍️ Shop", value=shop_cmds.strip(), inline=False)
     
     embed.set_footer(text="Use / to access commands! 💫")
     embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
@@ -533,6 +584,173 @@ async def guess_number(interaction: discord.Interaction, number: int):
 
     embed.set_footer(text="Keep playing to earn more rewards!")
     embed.set_author(name="Puro's Number Game", icon_url=bot.user.avatar.url)
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="shop", description="Browse Puro's shop!")
+async def shop(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    embed = discord.Embed(
+        title="🏪 Puro's Shop",
+        description="Welcome to my shop! Here's what I have for sale today:",
+        color=0x000000
+    )
+    
+    # Group items by price range
+    budget_items = []
+    medium_items = []
+    premium_items = []
+    
+    for item_id, item in SHOP_ITEMS.items():
+        if item["price"] <= 200:
+            budget_items.append(item_id)
+        elif item["price"] <= 500:
+            medium_items.append(item_id)
+        else:
+            premium_items.append(item_id)
+    
+    def format_items(items):
+        return "\n".join([
+            f"{SHOP_ITEMS[item_id]['emoji']} **{SHOP_ITEMS[item_id]['name']}** - {SHOP_ITEMS[item_id]['price']} 🪙\n*{SHOP_ITEMS[item_id]['description']}*"
+            for item_id in items
+        ])
+    
+    if budget_items:
+        embed.add_field(
+            name="Budget Friendly 💫",
+            value=format_items(budget_items),
+            inline=False
+        )
+    
+    if medium_items:
+        embed.add_field(
+            name="Popular Items ⭐",
+            value=format_items(medium_items),
+            inline=False
+        )
+    
+    if premium_items:
+        embed.add_field(
+            name="Premium Collection 👑",
+            value=format_items(premium_items),
+            inline=False
+        )
+    
+    embed.set_footer(text=f"Your Balance: 🪙 {profile.puro_coins} PuroCoins | Use /buy <item> to purchase!")
+    embed.set_author(name="Shop", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="buy", description="Buy an item from Puro's shop!")
+async def buy_item(interaction: discord.Interaction, item: str):
+    profile = get_user_profile(interaction.user.id)
+    
+    # Convert input to shop item ID format
+    item_id = item.lower().replace(" ", "_")
+    
+    if item_id not in SHOP_ITEMS:
+        await interaction.response.send_message(
+            "*Puro looks confused* I don't have that item in my shop! Use `/shop` to see what's available!",
+            ephemeral=True
+        )
+        return
+    
+    shop_item = SHOP_ITEMS[item_id]
+    
+    if profile.has_item(item_id):
+        await interaction.response.send_message(
+            f"*Puro tilts his head* You already have a {shop_item['name']}!",
+            ephemeral=True
+        )
+        return
+    
+    if not profile.can_afford(shop_item['price']):
+        await interaction.response.send_message(
+            f"*Puro looks sad* You need {shop_item['price']} PuroCoins for this item, but you only have {profile.puro_coins}!",
+            ephemeral=True
+        )
+        return
+    
+    # Purchase the item
+    profile.puro_coins -= shop_item['price']
+    profile.add_item(item_id)
+    
+    embed = discord.Embed(
+        title="🛍️ Purchase Successful!",
+        description=f"You bought a {shop_item['emoji']} **{shop_item['name']}**!\n\n*{shop_item['description']}*",
+        color=0x00FF00
+    )
+    embed.add_field(
+        name="Price Paid",
+        value=f"🪙 {shop_item['price']} PuroCoins",
+        inline=True
+    )
+    embed.add_field(
+        name="Remaining Balance",
+        value=f"🪙 {profile.puro_coins} PuroCoins",
+        inline=True
+    )
+    embed.set_footer(text="Thank you for shopping at Puro's! 🖤")
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="inventory", description="View your inventory!")
+async def view_inventory(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    embed = discord.Embed(
+        title="🎒 Your Inventory",
+        description="Here are all your items:",
+        color=0x000000
+    )
+    
+    if not profile.inventory:
+        embed.description = "*Your inventory is empty!*\nVisit `/shop` to buy some items!"
+    else:
+        # Group items by type
+        collectibles = []
+        wearables = []
+        consumables = []
+        
+        for item_id in profile.inventory:
+            item = SHOP_ITEMS[item_id]
+            if "hat" in item_id or "mask" in item_id:
+                wearables.append(item)
+            elif "cookie" in item_id:
+                consumables.append(item)
+            else:
+                collectibles.append(item)
+        
+        def format_items(items):
+            return "\n".join([
+                f"{item['emoji']} **{item['name']}**\n*{item['description']}*"
+                for item in items
+            ])
+        
+        if wearables:
+            embed.add_field(
+                name="👕 Wearables",
+                value=format_items(wearables),
+                inline=False
+            )
+        
+        if collectibles:
+            embed.add_field(
+                name="🏆 Collectibles",
+                value=format_items(collectibles),
+                inline=False
+            )
+        
+        if consumables:
+            embed.add_field(
+                name="🍪 Consumables",
+                value=format_items(consumables),
+                inline=False
+            )
+    
+    embed.set_footer(text=f"Balance: 🪙 {profile.puro_coins} PuroCoins")
+    embed.set_author(name="Inventory", icon_url=bot.user.avatar.url)
+    
     await interaction.response.send_message(embed=embed)
 
 # Run the bot
