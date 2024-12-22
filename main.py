@@ -236,11 +236,16 @@ async def help_command(interaction: discord.Interaction):
     """
     embed.add_field(name="🛠️ Utility", value=utility_cmds.strip(), inline=False)
     
-    # Fun Commands
-    fun_cmds = """
-    `/transfur` - Get transfurred by Puro! (Requires Puro role)
-    `/comfort` - Get a comforting message when feeling down
-    """
+    # Fun Commands - Only show transfur if user has Puro role
+    if discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+        fun_cmds = """
+        `/comfort` - Get a comforting message when feeling down
+        `/transfur` - Get transfurred by Puro!
+        """
+    else:
+        fun_cmds = """
+        `/comfort` - Get a comforting message when feeling down
+        """
     embed.add_field(name="🎮 Fun", value=fun_cmds.strip(), inline=False)
     
     embed.set_footer(text="Use / to access commands! 💫")
