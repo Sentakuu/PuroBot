@@ -108,14 +108,207 @@ SHOP_ITEMS = {
     }
 }
 
+TITLES = {
+    "newcomer": {
+        "name": "Newcomer",
+        "description": "Just arrived at the facility!",
+        "requirement": "Default title for new users"
+    },
+    "changed_fan": {
+        "name": "Changed Fan",
+        "description": "A true fan of Changed!",
+        "requirement": "Reach level 5"
+    },
+    "latex_friend": {
+        "name": "Latex Friend",
+        "description": "Friend to all latex creatures!",
+        "requirement": "Win 10 minigames"
+    },
+    "puro_bestie": {
+        "name": "Puro's Bestie",
+        "description": "Puro's closest friend!",
+        "requirement": "Reach level 10"
+    },
+    "rich_collector": {
+        "name": "Rich Collector",
+        "description": "Owns many precious items!",
+        "requirement": "Own 5 items from the shop"
+    }
+}
+
+BADGES = {
+    "minigame_master": {
+        "name": "Minigame Master",
+        "emoji": "🎮",
+        "description": "Won 50 minigames",
+        "secret": False
+    },
+    "rich_puro": {
+        "name": "Wealthy",
+        "emoji": "💰",
+        "description": "Earned 1000 PuroCoins",
+        "secret": False
+    },
+    "shopaholic": {
+        "name": "Shopaholic",
+        "emoji": "🛍️",
+        "description": "Bought 10 items from the shop",
+        "secret": False
+    },
+    "quiz_genius": {
+        "name": "Quiz Genius",
+        "emoji": "🎯",
+        "description": "Got 10 trivia questions correct",
+        "secret": False
+    },
+    "secret_finder": {
+        "name": "Secret Finder",
+        "emoji": "🔍",
+        "description": "???",
+        "secret": True
+    }
+}
+
+BANNERS = {
+    "default": {
+        "name": "Laboratory",
+        "url": "https://example.com/banner/lab.png",  # Replace with actual banner URLs
+        "description": "The mysterious facility",
+        "price": 0
+    },
+    "library": {
+        "name": "Library",
+        "url": "https://example.com/banner/library.png",
+        "description": "Where it all began",
+        "price": 1000
+    },
+    "crystal": {
+        "name": "Crystal Cave",
+        "url": "https://example.com/banner/crystal.png",
+        "description": "Shimmering crystals everywhere",
+        "price": 1500
+    },
+    "dark_latex": {
+        "name": "Dark Latex",
+        "url": "https://example.com/banner/dark_latex.png",
+        "description": "Home of the dark latex beasts",
+        "price": 2000
+    }
+}
+
+DAILY_REWARDS = {
+    1: {"coins": 100, "xp": 50, "description": "First day reward!"},
+    2: {"coins": 150, "xp": 75, "description": "Two days in a row!"},
+    3: {"coins": 200, "xp": 100, "description": "Three-day streak!"},
+    4: {"coins": 250, "xp": 125, "description": "Four days strong!"},
+    5: {"coins": 300, "xp": 150, "description": "Five-day dedication!"},
+    6: {"coins": 350, "xp": 175, "description": "Almost a week!"},
+    7: {"coins": 500, "xp": 250, "description": "Full week achieved!"}
+}
+
+ACHIEVEMENTS = {
+    "first_steps": {
+        "name": "First Steps",
+        "description": "Claim your first daily reward",
+        "emoji": "👣",
+        "reward_coins": 50,
+        "reward_xp": 25,
+        "secret": False
+    },
+    "social_butterfly": {
+        "name": "Social Butterfly",
+        "description": "Check out all social media links",
+        "emoji": "🦋",
+        "reward_coins": 100,
+        "reward_xp": 50,
+        "secret": False
+    },
+    "shopkeeper_friend": {
+        "name": "Shopkeeper's Friend",
+        "description": "Buy your first item from the shop",
+        "emoji": "🛍️",
+        "reward_coins": 75,
+        "reward_xp": 35,
+        "secret": False
+    },
+    "word_master": {
+        "name": "Word Master",
+        "description": "Win 5 unscramble games",
+        "emoji": "📝",
+        "reward_coins": 150,
+        "reward_xp": 75,
+        "secret": False
+    },
+    "trivia_expert": {
+        "name": "Trivia Expert",
+        "description": "Answer 10 trivia questions correctly",
+        "emoji": "🎯",
+        "reward_coins": 200,
+        "reward_xp": 100,
+        "secret": False
+    },
+    "lucky_guesser": {
+        "name": "Lucky Guesser",
+        "description": "Win the number guessing game 3 times",
+        "emoji": "🎲",
+        "reward_coins": 125,
+        "reward_xp": 60,
+        "secret": False
+    },
+    "dedicated_fan": {
+        "name": "Dedicated Fan",
+        "description": "Maintain a 7-day daily reward streak",
+        "emoji": "⭐",
+        "reward_coins": 300,
+        "reward_xp": 150,
+        "secret": False
+    },
+    "fashion_lover": {
+        "name": "Fashion Lover",
+        "description": "Own 3 different wearable items",
+        "emoji": "👔",
+        "reward_coins": 175,
+        "reward_xp": 85,
+        "secret": False
+    },
+    "rich_puro": {
+        "name": "Rich Puro",
+        "description": "Have 1000 PuroCoins at once",
+        "emoji": "💰",
+        "reward_coins": 250,
+        "reward_xp": 125,
+        "secret": False
+    },
+    "secret_hunter": {
+        "name": "???",
+        "description": "Find all secret achievements",
+        "emoji": "🔍",
+        "reward_coins": 500,
+        "reward_xp": 250,
+        "secret": True
+    }
+}
+
 class UserProfile:
     def __init__(self, user_id):
         self.user_id = user_id
         self.level = 1
         self.xp = 0
         self.puro_coins = 0
-        self.inventory = []  # List of item IDs
+        self.inventory = []
         self.last_game_time = 0
+        self.title = "newcomer"  # Default title
+        self.badges = set()  # Set of earned badges
+        self.banner = "default"  # Current banner
+        self.owned_banners = {"default"}  # Set of owned banners
+        self.games_won = 0  # Track game wins for badges
+        self.trivia_correct = 0  # Track correct trivia answers
+        self.last_daily = None  # Last daily reward claim time
+        self.daily_streak = 0  # Current streak of daily rewards
+        self.achievements = set()  # Completed achievements
+        self.unscramble_wins = 0
+        self.guess_wins = 0
+        self.wearables_owned = 0
 
     def add_item(self, item_id):
         self.inventory.append(item_id)
@@ -125,6 +318,134 @@ class UserProfile:
 
     def can_afford(self, price):
         return self.puro_coins >= price
+
+    def add_xp(self, amount):
+        self.xp += amount
+        # Check for level up
+        next_level = self.level * 100  # XP needed for next level
+        while self.xp >= next_level:
+            self.level += 1
+            self.xp -= next_level
+            next_level = self.level * 100
+            # Check for level-based titles
+            if self.level >= 5:
+                self.unlock_title("changed_fan")
+            if self.level >= 10:
+                self.unlock_title("puro_bestie")
+
+    def unlock_title(self, title_id):
+        if title_id in TITLES:
+            self.title = title_id
+
+    def earn_badge(self, badge_id):
+        if badge_id in BADGES and not BADGES[badge_id]["secret"]:
+            self.badges.add(badge_id)
+
+    def buy_banner(self, banner_id):
+        if banner_id in BANNERS and self.puro_coins >= BANNERS[banner_id]["price"]:
+            self.puro_coins -= BANNERS[banner_id]["price"]
+            self.owned_banners.add(banner_id)
+            return True
+        return False
+
+    def set_banner(self, banner_id):
+        if banner_id in self.owned_banners:
+            self.banner = banner_id
+            return True
+        return False
+
+    def can_claim_daily(self):
+        if not self.last_daily:
+            return True
+        
+        now = datetime.datetime.now()
+        last_claim = datetime.datetime.fromtimestamp(self.last_daily)
+        time_diff = now - last_claim
+        
+        # Check if it's been between 20-28 hours since last claim
+        # This gives a 4-hour grace period for maintaining streaks
+        hours_diff = time_diff.total_seconds() / 3600
+        return hours_diff >= 20
+
+    def should_reset_streak(self):
+        if not self.last_daily:
+            return False
+        
+        now = datetime.datetime.now()
+        last_claim = datetime.datetime.fromtimestamp(self.last_daily)
+        time_diff = now - last_claim
+        hours_diff = time_diff.total_seconds() / 3600
+        
+        # Reset streak if more than 28 hours have passed
+        return hours_diff > 28
+
+    def claim_daily(self):
+        now = datetime.datetime.now()
+        
+        # Reset streak if too much time has passed
+        if self.should_reset_streak():
+            self.daily_streak = 0
+        
+        # Increment streak (max 7 days)
+        self.daily_streak = min(self.daily_streak + 1, 7)
+        
+        # Get rewards for current streak
+        rewards = DAILY_REWARDS[self.daily_streak]
+        
+        # Apply rewards
+        self.puro_coins += rewards["coins"]
+        self.add_xp(rewards["xp"])
+        
+        # Update last claim time
+        self.last_daily = now.timestamp()
+        
+        return rewards
+
+    def check_achievements(self):
+        earned = []
+        
+        # First Steps
+        if "first_steps" not in self.achievements and self.last_daily is not None:
+            earned.append(self.earn_achievement("first_steps"))
+        
+        # Word Master
+        if "word_master" not in self.achievements and self.unscramble_wins >= 5:
+            earned.append(self.earn_achievement("word_master"))
+        
+        # Trivia Expert
+        if "trivia_expert" not in self.achievements and self.trivia_correct >= 10:
+            earned.append(self.earn_achievement("trivia_expert"))
+        
+        # Lucky Guesser
+        if "lucky_guesser" not in self.achievements and self.guess_wins >= 3:
+            earned.append(self.earn_achievement("lucky_guesser"))
+        
+        # Dedicated Fan
+        if "dedicated_fan" not in self.achievements and self.daily_streak >= 7:
+            earned.append(self.earn_achievement("dedicated_fan"))
+        
+        # Rich Puro
+        if "rich_puro" not in self.achievements and self.puro_coins >= 1000:
+            earned.append(self.earn_achievement("rich_puro"))
+        
+        # Fashion Lover
+        wearables = sum(1 for item in self.inventory if "hat" in item or "mask" in item)
+        if "fashion_lover" not in self.achievements and wearables >= 3:
+            earned.append(self.earn_achievement("fashion_lover"))
+        
+        return earned
+
+    def earn_achievement(self, achievement_id):
+        if achievement_id not in self.achievements and achievement_id in ACHIEVEMENTS:
+            self.achievements.add(achievement_id)
+            achievement = ACHIEVEMENTS[achievement_id]
+            
+            # Apply rewards
+            self.puro_coins += achievement["reward_coins"]
+            self.add_xp(achievement["reward_xp"])
+            
+            return achievement
+        return None
 
 user_profiles = {}
 
@@ -333,6 +654,7 @@ async def help_command(interaction: discord.Interaction):
     `/unscramble` - Unscramble Changed-themed words
     `/trivia` - Test your Changed knowledge
     `/guess` - Guess Puro's number (1-10)
+    `/daily` - Claim your daily reward!
     """
     embed.add_field(name="🎲 Minigames", value=games_cmds.strip(), inline=False)
     
@@ -343,6 +665,18 @@ async def help_command(interaction: discord.Interaction):
     `/inventory` - View your items
     """
     embed.add_field(name="🛍️ Shop", value=shop_cmds.strip(), inline=False)
+    
+    # Profile Commands
+    profile_cmds = """
+    `/profile` - View your profile
+    `/titles` - View available titles
+    `/settitle` - Change your title
+    `/banners` - View available banners
+    `/buybanner` - Buy a new banner
+    `/setbanner` - Set your banner
+    `/achievements` - View your achievements
+    """
+    embed.add_field(name="👤 Profile", value=profile_cmds.strip(), inline=False)
     
     embed.set_footer(text="Use / to access commands! 💫")
     embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
@@ -438,6 +772,10 @@ async def unscramble(interaction: discord.Interaction):
             xp_earned = random.randint(5, 15)
             profile.puro_coins += coins_earned
             profile.xp += xp_earned
+            profile.unscramble_wins += 1  # Track wins for achievements
+            
+            # Check achievements
+            new_achievements = profile.check_achievements()
             
             win_embed = discord.Embed(
                 title="🎉 Correct!",
@@ -446,6 +784,21 @@ async def unscramble(interaction: discord.Interaction):
             )
             win_embed.set_footer(text="Great job! Keep playing to earn more rewards!")
             await interaction.channel.send(embed=win_embed)
+            
+            # Show achievement notifications
+            if new_achievements:
+                for achievement in new_achievements:
+                    reward_embed = discord.Embed(
+                        title="🎉 Achievement Unlocked!",
+                        description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                        color=0x00FF00
+                    )
+                    reward_embed.add_field(
+                        name="Rewards",
+                        value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                        inline=False
+                    )
+                    await interaction.channel.send(embed=reward_embed)
         else:
             lose_embed = discord.Embed(
                 title="❌ Not quite!",
@@ -524,6 +877,10 @@ async def trivia(interaction: discord.Interaction):
             xp_earned = random.randint(10, 20)
             profile.puro_coins += coins_earned
             profile.xp += xp_earned
+            profile.trivia_correct += 1  # Track correct answers for achievements
+            
+            # Check achievements
+            new_achievements = profile.check_achievements()
             
             win_embed = discord.Embed(
                 title="🎉 Correct Answer!",
@@ -532,6 +889,21 @@ async def trivia(interaction: discord.Interaction):
             )
             win_embed.set_footer(text="Amazing knowledge! Keep it up!")
             await interaction.channel.send(embed=win_embed)
+            
+            # Show achievement notifications
+            if new_achievements:
+                for achievement in new_achievements:
+                    reward_embed = discord.Embed(
+                        title="🎉 Achievement Unlocked!",
+                        description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                        color=0x00FF00
+                    )
+                    reward_embed.add_field(
+                        name="Rewards",
+                        value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                        inline=False
+                    )
+                    await interaction.channel.send(embed=reward_embed)
         else:
             lose_embed = discord.Embed(
                 title="❌ Not Quite Right!",
@@ -575,9 +947,28 @@ async def guess_number(interaction: discord.Interaction, number: int):
         xp_earned = random.randint(3, 10)
         profile.puro_coins += coins_earned
         profile.xp += xp_earned
+        profile.guess_wins += 1  # Track wins for achievements
+        
+        # Check achievements
+        new_achievements = profile.check_achievements()
         
         embed.description = f"🎉 **You got it!** The number was {correct}!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP"
         embed.color = 0x00FF00
+        
+        # Show achievement notifications after the guess result
+        if new_achievements:
+            for achievement in new_achievements:
+                reward_embed = discord.Embed(
+                    title="🎉 Achievement Unlocked!",
+                    description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                    color=0x00FF00
+                )
+                reward_embed.add_field(
+                    name="Rewards",
+                    value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                    inline=False
+                )
+                await interaction.channel.send(embed=reward_embed)
     else:
         embed.description = f"Not quite! The number was {correct}. Try again next time!"
         embed.color = 0xFF0000
@@ -752,6 +1143,287 @@ async def view_inventory(interaction: discord.Interaction):
     embed.set_author(name="Inventory", icon_url=bot.user.avatar.url)
     
     await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="profile", description="View your or another user's profile!")
+async def view_profile(interaction: discord.Interaction, user: discord.Member = None):
+    target_user = user or interaction.user
+    profile = get_user_profile(target_user.id)
+    
+    # Calculate level progress
+    next_level_xp = profile.level * 100
+    progress = int((profile.xp / next_level_xp) * 10)
+    progress_bar = "█" * progress + "░" * (10 - progress)
+    
+    embed = discord.Embed(
+        title=f"{target_user.name}'s Profile",
+        description=f"**{TITLES[profile.title]['name']}**\n*{TITLES[profile.title]['description']}*",
+        color=0x000000
+    )
+    
+    # Level and XP
+    embed.add_field(
+        name="Level Progress",
+        value=f"Level {profile.level}\n{progress_bar} {profile.xp}/{next_level_xp} XP",
+        inline=False
+    )
+    
+    # Badges
+    if profile.badges:
+        badges_text = " ".join([BADGES[badge]["emoji"] for badge in profile.badges])
+        embed.add_field(name="Badges", value=badges_text, inline=False)
+    
+    # Stats
+    embed.add_field(name="PuroCoins", value=f"🪙 {profile.puro_coins}", inline=True)
+    embed.add_field(name="Games Won", value=f"🎮 {profile.games_won}", inline=True)
+    embed.add_field(name="Items Owned", value=f"🎒 {len(profile.inventory)}", inline=True)
+    
+    # Set banner if available
+    if profile.banner in BANNERS:
+        embed.set_image(url=BANNERS[profile.banner]["url"])
+    
+    embed.set_thumbnail(url=target_user.avatar.url if target_user.avatar else target_user.default_avatar.url)
+    embed.set_footer(text=f"Profile created: {target_user.created_at.strftime('%Y-%m-%d')}")
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="titles", description="View and select your titles!")
+async def view_titles(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    embed = discord.Embed(
+        title="Available Titles",
+        description="Here are all the titles you can earn:",
+        color=0x000000
+    )
+    
+    for title_id, title in TITLES.items():
+        # Add 🎯 if it's the current title
+        current = "🎯 " if profile.title == title_id else ""
+        embed.add_field(
+            name=f"{current}{title['name']}",
+            value=f"*{title['description']}*\nRequirement: {title['requirement']}",
+            inline=False
+        )
+    
+    embed.set_footer(text="Use /settitle <title> to change your title!")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="settitle", description="Set your active title!")
+async def set_title(interaction: discord.Interaction, title: str):
+    profile = get_user_profile(interaction.user.id)
+    title_id = title.lower().replace(" ", "_")
+    
+    if title_id not in TITLES:
+        await interaction.response.send_message("*Puro looks confused* That title doesn't exist!", ephemeral=True)
+        return
+    
+    # Check if user meets requirements
+    if title_id == "changed_fan" and profile.level < 5:
+        await interaction.response.send_message("You need to reach level 5 to use this title!", ephemeral=True)
+        return
+    elif title_id == "puro_bestie" and profile.level < 10:
+        await interaction.response.send_message("You need to reach level 10 to use this title!", ephemeral=True)
+        return
+    elif title_id == "rich_collector" and len(profile.inventory) < 5:
+        await interaction.response.send_message("You need to own 5 items to use this title!", ephemeral=True)
+        return
+    
+    profile.title = title_id
+    await interaction.response.send_message(f"Your title has been changed to **{TITLES[title_id]['name']}**!")
+
+@bot.tree.command(name="banners", description="View and buy profile banners!")
+async def view_banners(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    embed = discord.Embed(
+        title="Profile Banners",
+        description="Customize your profile with these awesome banners!",
+        color=0x000000
+    )
+    
+    for banner_id, banner in BANNERS.items():
+        # Add indicators for owned/equipped banners
+        status = "✨ " if banner_id == profile.banner else "✅ " if banner_id in profile.owned_banners else ""
+        price_text = "Owned" if banner_id in profile.owned_banners else f"🪙 {banner['price']} PuroCoins"
+        
+        embed.add_field(
+            name=f"{status}{banner['name']}",
+            value=f"*{banner['description']}*\nPrice: {price_text}",
+            inline=False
+        )
+    
+    embed.set_footer(text="Use /setbanner <name> to equip a banner or /buybanner <name> to buy one!")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="buybanner", description="Buy a new profile banner!")
+async def buy_banner(interaction: discord.Interaction, banner: str):
+    profile = get_user_profile(interaction.user.id)
+    banner_id = banner.lower().replace(" ", "_")
+    
+    if banner_id not in BANNERS:
+        await interaction.response.send_message("*Puro looks confused* That banner doesn't exist!", ephemeral=True)
+        return
+    
+    if banner_id in profile.owned_banners:
+        await interaction.response.send_message("You already own this banner!", ephemeral=True)
+        return
+    
+    banner_data = BANNERS[banner_id]
+    if profile.buy_banner(banner_id):
+        embed = discord.Embed(
+            title="🎉 Banner Purchased!",
+            description=f"You bought the **{banner_data['name']}** banner!\n\n*{banner_data['description']}*",
+            color=0x00FF00
+        )
+        embed.add_field(name="Price Paid", value=f"🪙 {banner_data['price']} PuroCoins")
+        embed.add_field(name="Remaining Balance", value=f"🪙 {profile.puro_coins} PuroCoins")
+        embed.set_footer(text="Use /setbanner to equip your new banner!")
+        await interaction.response.send_message(embed=embed)
+    else:
+        await interaction.response.send_message(f"You need {banner_data['price']} PuroCoins to buy this banner!", ephemeral=True)
+
+@bot.tree.command(name="setbanner", description="Set your profile banner!")
+async def set_banner(interaction: discord.Interaction, banner: str):
+    profile = get_user_profile(interaction.user.id)
+    banner_id = banner.lower().replace(" ", "_")
+    
+    if banner_id not in BANNERS:
+        await interaction.response.send_message("*Puro looks confused* That banner doesn't exist!", ephemeral=True)
+        return
+    
+    if profile.set_banner(banner_id):
+        embed = discord.Embed(
+            title="Banner Updated!",
+            description=f"Your profile banner is now set to **{BANNERS[banner_id]['name']}**!",
+            color=0x00FF00
+        )
+        embed.set_image(url=BANNERS[banner_id]["url"])
+        await interaction.response.send_message(embed=embed)
+    else:
+        await interaction.response.send_message("You don't own this banner yet! Use `/buybanner` to purchase it.", ephemeral=True)
+
+@bot.tree.command(name="daily", description="Claim your daily reward!")
+async def daily_reward(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    if not profile.can_claim_daily():
+        # Calculate time until next claim
+        now = datetime.datetime.now()
+        last_claim = datetime.datetime.fromtimestamp(profile.last_daily)
+        next_claim = last_claim + datetime.timedelta(hours=20)
+        time_left = next_claim - now
+        hours = int(time_left.total_seconds() / 3600)
+        minutes = int((time_left.total_seconds() % 3600) / 60)
+        
+        embed = discord.Embed(
+            title="Daily Reward Not Ready",
+            description=f"*Puro is still preparing your next reward!*\nCome back in **{hours}h {minutes}m**",
+            color=0xFF0000
+        )
+        embed.set_footer(text="Daily rewards reset every 20 hours!")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    rewards = profile.claim_daily()
+    
+    embed = discord.Embed(
+        title="🎁 Daily Reward Claimed!",
+        description=f"**{rewards['description']}**\n\nYou received:\n🪙 {rewards['coins']} PuroCoins\n✨ {rewards['xp']} XP",
+        color=0x00FF00
+    )
+    
+    # Show streak information
+    streak_bar = "🌟 " * profile.daily_streak + "⭐ " * (7 - profile.daily_streak)
+    embed.add_field(
+        name="Daily Streak",
+        value=f"Day {profile.daily_streak} of 7\n{streak_bar}",
+        inline=False
+    )
+    
+    # Show next day's reward
+    if profile.daily_streak < 7:
+        next_rewards = DAILY_REWARDS[profile.daily_streak + 1]
+        embed.add_field(
+            name="Next Day's Reward",
+            value=f"🪙 {next_rewards['coins']} PuroCoins\n✨ {next_rewards['xp']} XP",
+            inline=False
+        )
+    
+    embed.set_footer(text="Come back in 20 hours for your next reward!")
+    embed.set_author(name="Daily Rewards", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="achievements", description="View your achievements!")
+async def view_achievements(interaction: discord.Interaction):
+    profile = get_user_profile(interaction.user.id)
+    
+    # Check for new achievements
+    new_achievements = profile.check_achievements()
+    
+    embed = discord.Embed(
+        title="🏆 Achievements",
+        description="Track your progress and earn rewards!",
+        color=0x000000
+    )
+    
+    # Group achievements by category
+    completed = []
+    in_progress = []
+    secret = []
+    
+    for ach_id, ach in ACHIEVEMENTS.items():
+        if ach["secret"] and ach_id not in profile.achievements:
+            secret.append("🔒 ???")
+            continue
+            
+        status = "✅" if ach_id in profile.achievements else "❌"
+        text = f"{ach['emoji']} **{ach['name']}**\n*{ach['description']}*\nRewards: 🪙 {ach['reward_coins']} PuroCoins, ✨ {ach['reward_xp']} XP"
+        
+        if ach_id in profile.achievements:
+            completed.append(f"{status} {text}")
+        else:
+            in_progress.append(f"{status} {text}")
+    
+    if completed:
+        embed.add_field(
+            name="Completed Achievements",
+            value="\n\n".join(completed),
+            inline=False
+        )
+    
+    if in_progress:
+        embed.add_field(
+            name="Available Achievements",
+            value="\n\n".join(in_progress),
+            inline=False
+        )
+    
+    if secret:
+        embed.add_field(
+            name="Secret Achievements",
+            value="\n".join(secret),
+            inline=False
+        )
+    
+    embed.set_footer(text=f"Completed: {len(profile.achievements)}/{len(ACHIEVEMENTS)}")
+    
+    await interaction.response.send_message(embed=embed)
+    
+    # Show new achievements if any were earned
+    if new_achievements:
+        for achievement in new_achievements:
+            reward_embed = discord.Embed(
+                title="🎉 Achievement Unlocked!",
+                description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                color=0x00FF00
+            )
+            reward_embed.add_field(
+                name="Rewards",
+                value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                inline=False
+            )
+            await interaction.channel.send(embed=reward_embed)
 
 # Run the bot
 bot.run(os.getenv('DISCORD_TOKEN'))
