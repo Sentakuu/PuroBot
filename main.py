@@ -25,6 +25,15 @@ GUESS_GAME_CONFIG = {
     "interval_minutes": 20  # Default interval
 }
 
+# Add giveaway configuration
+GIVEAWAY_CONFIG = {
+    "active_giveaways": {},  # Store active giveaways
+    "ended_giveaways": set()  # Store ended giveaway message IDs
+}
+
+GIVEAWAY_EMOJI = "🎉"
+GIVEAWAY_PURO_GIF = "https://media1.tenor.com/m/E5_AUOTIL2kAAAAd/puro-changed.gif"
+
 # Constants
 OWNER_ROLE_NAME = "Puro"
 TRANSFUR_RESPONSES = [
@@ -2002,6 +2011,325 @@ async def unlock_achievements(interaction: discord.Interaction, user: discord.Me
     )
     
     await interaction.response.send_message(embed=summary_embed)
+
+class Giveaway:
+    def __init__(self, message_id, channel_id, prize, winners, end_time, host_id, required_role=None, dm_message=None):
+        self.message_id = message_id
+        self.channel_id = channel_id
+        self.prize = prize
+        self.winners_count = winners
+        self.end_time = end_time
+        self.host_id = host_id
+        self.required_role = required_role
+        self.dm_message = dm_message
+        self.participants = set()
+
+    def add_participant(self, user_id):
+        self.participants.add(user_id)
+
+    def remove_participant(self, user_id):
+        self.participants.discard(user_id)
+
+    def get_winners(self):
+        eligible = list(self.participants)
+        if not eligible:
+            return []
+        return random.sample(eligible, min(self.winners_count, len(eligible)))
+
+    def time_remaining(self):
+        now = datetime.datetime.now()
+        end = datetime.datetime.fromtimestamp(self.end_time)
+        remaining = end - now
+        
+        if remaining.total_seconds() <= 0:
+            return "Ended"
+            
+        days = remaining.days
+        hours = remaining.seconds // 3600
+        minutes = (remaining.seconds % 3600) // 60
+        seconds = remaining.seconds % 60
+        
+        parts = []
+        if days > 0:
+            parts.append(f"{days}d")
+        if hours > 0:
+            parts.append(f"{hours}h")
+        if minutes > 0:
+            parts.append(f"{minutes}m")
+        if seconds > 0:
+            parts.append(f"{seconds}s")
+            
+        return " ".join(parts)
+
+@bot.tree.command(name="giveaway", description="Start a new giveaway!")
+@commands.has_permissions(administrator=True)
+async def create_giveaway(
+    interaction: discord.Interaction, 
+    prize: str,
+    winners: int,
+    duration: str,
+    required_role: discord.Role = None,
+    dm_message: str = None
+):
+    """Create a new giveaway
+    Parameters:
+    prize: What to give away
+    winners: Number of winners
+    duration: Duration (e.g. 1h, 2d, 1w)
+    required_role: Role required to enter (optional)
+    dm_message: Custom message to send to winners (optional)
+    """
+    # Validate winners count
+    if winners < 1:
+        await interaction.response.send_message("You must have at least 1 winner!", ephemeral=True)
+        return
+        
+    # Parse duration
+    duration_regex = re.compile(r"(\d+)([smhdw])")
+    match = duration_regex.match(duration.lower())
+    if not match:
+        await interaction.response.send_message(
+            "Invalid duration format! Use a number followed by s/m/h/d/w (e.g. 30s, 5m, 2h, 1d, 1w)",
+            ephemeral=True
+        )
+        return
+        
+    amount = int(match.group(1))
+    unit = match.group(2)
+    
+    # Convert to seconds
+    multipliers = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400, 'w': 604800}
+    total_seconds = amount * multipliers[unit]
+    
+    # Check maximum duration (30 days)
+    if total_seconds > 2592000:  # 30 days in seconds
+        await interaction.response.send_message("Giveaway duration cannot exceed 30 days!", ephemeral=True)
+        return
+        
+    # Calculate end time
+    end_time = datetime.datetime.now().timestamp() + total_seconds
+    
+    # Create embed
+    embed = discord.Embed(
+        title="🎉 New Giveaway! 🎉",
+        description=f"# {prize}\n\n"
+                   f"React with {GIVEAWAY_EMOJI} to enter!\n\n"
+                   f"**Winners:** {winners}\n"
+                   f"**Hosted by:** {interaction.user.mention}\n"
+                   f"**Required Role:** {required_role.mention if required_role else 'None'}\n\n"
+                   f"Ends in: **{duration}**",
+        color=0x2b2d31
+    )
+    
+    embed.set_footer(text="Good luck everyone! 🍀")
+    embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else None)
+    embed.set_image(url=GIVEAWAY_PURO_GIF)
+    
+    # Send giveaway message
+    await interaction.response.send_message("Creating giveaway...", ephemeral=True)
+    giveaway_msg = await interaction.channel.send(embed=embed)
+    await giveaway_msg.add_reaction(GIVEAWAY_EMOJI)
+    
+    # Store giveaway data
+    GIVEAWAY_CONFIG["active_giveaways"][giveaway_msg.id] = Giveaway(
+        giveaway_msg.id,
+        interaction.channel.id,
+        prize,
+        winners,
+        end_time,
+        interaction.user.id,
+        required_role,
+        dm_message
+    )
+    
+    # Start checking task if not running
+    if not check_giveaways.is_running():
+        check_giveaways.start()
+
+@tasks.loop(seconds=5)
+async def check_giveaways():
+    current_time = datetime.datetime.now().timestamp()
+    
+    for giveaway_id, giveaway in list(GIVEAWAY_CONFIG["active_giveaways"].items()):
+        if current_time >= giveaway.end_time and giveaway_id not in GIVEAWAY_CONFIG["ended_giveaways"]:
+            # Mark as ended
+            GIVEAWAY_CONFIG["ended_giveaways"].add(giveaway_id)
+            
+            try:
+                channel = bot.get_channel(giveaway.channel_id)
+                if not channel:
+                    continue
+                    
+                message = await channel.fetch_message(giveaway_id)
+                if not message:
+                    continue
+                
+                # Get winners
+                winners = giveaway.get_winners()
+                
+                # Update embed
+                embed = message.embeds[0]
+                
+                if winners:
+                    winner_mentions = [f"<@{winner_id}>" for winner_id in winners]
+                    winners_text = ", ".join(winner_mentions)
+                    
+                    embed.description = f"# {giveaway.prize}\n\n"
+                    embed.description += f"🎉 **Winners:** {winners_text}\n\n"
+                    embed.description += f"**Hosted by:** <@{giveaway.host_id}>"
+                    
+                    # Send DM to winners
+                    for winner_id in winners:
+                        try:
+                            winner = await bot.fetch_user(winner_id)
+                            if winner:
+                                win_embed = discord.Embed(
+                                    title="🎉 Congratulations! You Won!",
+                                    description=f"You won the giveaway for:\n# {giveaway.prize}",
+                                    color=0x00FF00
+                                )
+                                
+                                if giveaway.dm_message:
+                                    win_embed.add_field(
+                                        name="Message from the host:",
+                                        value=giveaway.dm_message,
+                                        inline=False
+                                    )
+                                    
+                                win_embed.set_footer(text="Thank you for participating! 🎊")
+                                win_embed.set_image(url=GIVEAWAY_PURO_GIF)
+                                
+                                await winner.send(embed=win_embed)
+                        except:
+                            continue
+                else:
+                    embed.description = f"# {giveaway.prize}\n\n"
+                    embed.description += "No valid winners! 😢\n\n"
+                    embed.description += f"**Hosted by:** <@{giveaway.host_id}>"
+                
+                embed.color = 0x2b2d31
+                embed.set_footer(text="Giveaway Ended 🎊")
+                
+                await message.edit(embed=embed)
+                
+                # Send announcement message
+                announce_embed = discord.Embed(
+                    title="🎉 Giveaway Ended!",
+                    description=f"**Prize:** {giveaway.prize}\n\n" + 
+                              ("**Winners:** " + winners_text if winners else "No valid winners! 😢"),
+                    color=0x00FF00
+                )
+                announce_embed.set_footer(text="Congratulations to the winners! 🎊")
+                await channel.send(embed=announce_embed)
+                
+            except Exception as e:
+                print(f"Error ending giveaway {giveaway_id}: {e}")
+                continue
+            
+            # Remove from active giveaways
+            GIVEAWAY_CONFIG["active_giveaways"].pop(giveaway_id, None)
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+        
+    if payload.message_id in GIVEAWAY_CONFIG["active_giveaways"]:
+        giveaway = GIVEAWAY_CONFIG["active_giveaways"][payload.message_id]
+        
+        if str(payload.emoji) == GIVEAWAY_EMOJI:
+            # Check role requirement
+            if giveaway.required_role:
+                member = payload.member
+                if not member or not discord.utils.get(member.roles, id=giveaway.required_role.id):
+                    try:
+                        channel = bot.get_channel(payload.channel_id)
+                        message = await channel.fetch_message(payload.message_id)
+                        await message.remove_reaction(payload.emoji, payload.member)
+                        
+                        await payload.member.send(
+                            f"You need the {giveaway.required_role.name} role to enter this giveaway!"
+                        )
+                    except:
+                        pass
+                    return
+            
+            giveaway.add_participant(payload.user_id)
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.message_id in GIVEAWAY_CONFIG["active_giveaways"]:
+        if str(payload.emoji) == GIVEAWAY_EMOJI:
+            giveaway = GIVEAWAY_CONFIG["active_giveaways"][payload.message_id]
+            giveaway.remove_participant(payload.user_id)
+
+@bot.tree.command(name="reroll", description="Reroll a giveaway winner")
+@commands.has_permissions(administrator=True)
+async def reroll_giveaway(interaction: discord.Interaction, message_id: str):
+    """Reroll a giveaway winner
+    Parameters:
+    message_id: The ID of the giveaway message
+    """
+    try:
+        message_id = int(message_id)
+        if message_id not in GIVEAWAY_CONFIG["ended_giveaways"]:
+            await interaction.response.send_message("That's not a valid ended giveaway!", ephemeral=True)
+            return
+            
+        channel = interaction.channel
+        message = await channel.fetch_message(message_id)
+        
+        if not message or not message.embeds:
+            await interaction.response.send_message("Couldn't find the giveaway message!", ephemeral=True)
+            return
+            
+        # Get original giveaway data from embed
+        embed = message.embeds[0]
+        prize = embed.description.split("\n")[0].strip("# ")
+        
+        # Get reactions
+        reaction = discord.utils.get(message.reactions, emoji=GIVEAWAY_EMOJI)
+        if not reaction:
+            await interaction.response.send_message("No participants found!", ephemeral=True)
+            return
+            
+        users = [user.id async for user in reaction.users() if user.id != bot.user.id]
+        if not users:
+            await interaction.response.send_message("No valid participants found!", ephemeral=True)
+            return
+            
+        # Pick new winner
+        winner_id = random.choice(users)
+        winner = await bot.fetch_user(winner_id)
+        
+        # Announce new winner
+        reroll_embed = discord.Embed(
+            title="🎉 Giveaway Rerolled!",
+            description=f"**Prize:** {prize}\n**New Winner:** {winner.mention}",
+            color=0x00FF00
+        )
+        reroll_embed.set_footer(text="Congratulations to the new winner! 🎊")
+        
+        await interaction.response.send_message(embed=reroll_embed)
+        
+        # DM the new winner
+        try:
+            win_embed = discord.Embed(
+                title="🎉 Congratulations! You Won!",
+                description=f"You won the reroll for:\n# {prize}",
+                color=0x00FF00
+            )
+            win_embed.set_footer(text="Thank you for participating! 🎊")
+            win_embed.set_image(url=GIVEAWAY_PURO_GIF)
+            
+            await winner.send(embed=win_embed)
+        except:
+            pass
+            
+    except ValueError:
+        await interaction.response.send_message("Please provide a valid message ID!", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"An error occurred: {str(e)}", ephemeral=True)
 
 # Run the bot
 bot.run(os.getenv('DISCORD_TOKEN'))
