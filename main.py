@@ -222,7 +222,7 @@ ACHIEVEMENTS = {
     "first_steps": {
         "name": "First Steps",
         "description": "Claim your first daily reward",
-        "emoji": "👣",
+        "emoji": "🐾",
         "reward_coins": 50,
         "reward_xp": 25,
         "secret": False
@@ -1653,9 +1653,17 @@ async def on_message(message):
                 )
                 await message.channel.send(embed=embed)
             elif guess < GUESS_GAME_CONFIG["current_number"]:
-                await message.add_reaction("⬆️")
+                embed = discord.Embed(
+                    description=f"*Puro shakes his head* {message.author.mention}, your guess is **too low**! Try a higher number!",
+                    color=0xFF5555
+                )
+                await message.channel.send(embed=embed)
             else:
-                await message.add_reaction("⬇️")
+                embed = discord.Embed(
+                    description=f"*Puro shakes his head* {message.author.mention}, your guess is **too high**! Try a lower number!",
+                    color=0xFF5555
+                )
+                await message.channel.send(embed=embed)
         except ValueError:
             pass  # Not a number, ignore
 
@@ -1669,6 +1677,46 @@ async def stop_guess_game(interaction: discord.Interaction):
         await interaction.response.send_message("Automated guess number game has been stopped!")
     else:
         await interaction.response.send_message("The game is not currently running!")
+
+@bot.tree.command(name="clean", description="Clean messages from the channel (Staff only)")
+@commands.has_permissions(manage_messages=True)
+async def clean_messages(interaction: discord.Interaction, amount: int):
+    """Clean messages from the channel
+    Parameters:
+    amount: Number of messages to delete (max 50)
+    """
+    if amount < 1:
+        await interaction.response.send_message("*Puro tilts his head* Please specify at least 1 message to clean!", ephemeral=True)
+        return
+    
+    if amount > 50:
+        await interaction.response.send_message("*Puro looks worried* I can only clean up to 50 messages at once!", ephemeral=True)
+        return
+    
+    # Defer the response since deletion might take a moment
+    await interaction.response.defer(ephemeral=True)
+    
+    # Delete messages
+    deleted = await interaction.channel.purge(limit=amount)
+    
+    # Random success messages with Puro's style
+    success_messages = [
+        "*Puro wipes the chat clean with his paws* All done! 🐾",
+        "*Puro uses his special latex powers to clean the chat* Nice and tidy! 🧹",
+        "*Puro carefully removes the messages* The chat is now spotless! 🌟",
+        "*Puro helps organize the chat* Everything's clean now! ✨",
+        "*Puro proudly shows off his cleaning work* All cleaned up! 🧼"
+    ]
+    
+    # Send confirmation
+    embed = discord.Embed(
+        title="🧹 Chat Cleaned!",
+        description=f"{random.choice(success_messages)}\n\nRemoved **{len(deleted)}** messages.",
+        color=0x00FF00
+    )
+    embed.set_footer(text="Keeping things tidy for everyone!")
+    
+    await interaction.followup.send(embed=embed, ephemeral=True)
 
 # Run the bot
 bot.run(os.getenv('DISCORD_TOKEN'))
