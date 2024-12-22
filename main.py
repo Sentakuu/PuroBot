@@ -67,7 +67,7 @@ MINECRAFT_COLORS = {
 SOCIAL_LINKS = {
     "YouTube": "https://www.youtube.com/@SentakuuGaming",
     "Steam": "https://steamcommunity.com/id/Arionyx/",
-    "Telegram": "t.me/SentakuuGaming",
+    "Telegram": "https://t.me/SentakuuGaming",
     "Twitch": "https://www.twitch.tv/arionyxcz",
     "Minecraft": "Arionyxx"
 }
@@ -241,6 +241,7 @@ async def help_command(interaction: discord.Interaction):
     `/genname` - Generate a custom name
     `/genpass` - Generate a secure password
     `/mccolors` - View Minecraft color codes
+    `/socials` - View all my social media profiles
     """
     embed.add_field(name="🛠️ Utility", value=utility_cmds.strip(), inline=False)
     
