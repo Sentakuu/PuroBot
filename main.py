@@ -1175,11 +1175,11 @@ async def shop(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="buy", description="Buy an item from Puro's shop!")
-async def buy_item(interaction: discord.Interaction, item: str):
+async def buy_item(interaction: discord.Interaction, item: app_commands.Choice[str]):
     profile = get_user_profile(interaction.user.id)
     
-    # Convert input to shop item ID format
-    item_id = item.lower().replace(" ", "_")
+    # Get the item ID from the choice value
+    item_id = item.value
     
     if item_id not in SHOP_ITEMS:
         await interaction.response.send_message(
@@ -1226,6 +1226,20 @@ async def buy_item(interaction: discord.Interaction, item: str):
     embed.set_footer(text="Thank you for shopping at Puro's! 🖤")
     
     await interaction.response.send_message(embed=embed)
+
+@buy_item.autocomplete('item')
+async def buy_item_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[app_commands.Choice[str]]:
+    items = []
+    for item_id, item in SHOP_ITEMS.items():
+        # Create a choice with the item name as the name and item_id as the value
+        items.append(app_commands.Choice(
+            name=f"{item['emoji']} {item['name']} - {item['price']} 🪙",
+            value=item_id
+        ))
+    return items
 
 @bot.tree.command(name="inventory", description="View your inventory!")
 async def view_inventory(interaction: discord.Interaction):
