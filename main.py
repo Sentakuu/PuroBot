@@ -912,9 +912,11 @@ async def unscramble(interaction: discord.Interaction):
             profile = get_user_profile(interaction.user.id)
             coins_earned = random.randint(10, 20)
             xp_earned = random.randint(5, 15)
-            profile.puro_coins += coins_earned
-            profile.xp += xp_earned
-            profile.unscramble_wins += 1  # Track wins for achievements
+            
+            # Use proper methods for rewards
+            profile.add_coins(coins_earned)
+            profile.add_xp(xp_earned)
+            profile.unscramble_wins += 1
             
             # Check achievements
             new_achievements = profile.check_achievements()
@@ -987,7 +989,6 @@ async def trivia(interaction: discord.Interaction):
             "answer": "changed",
             "options": ["Changed", "Altered", "Transformed", "Shifted"]
         }
-        # Add more questions as needed
     ]
     
     question = random.choice(TRIVIA_QUESTIONS)
@@ -1017,9 +1018,11 @@ async def trivia(interaction: discord.Interaction):
             profile = get_user_profile(interaction.user.id)
             coins_earned = random.randint(15, 25)
             xp_earned = random.randint(10, 20)
-            profile.puro_coins += coins_earned
-            profile.xp += xp_earned
-            profile.trivia_correct += 1  # Track correct answers for achievements
+            
+            # Use proper methods for rewards
+            profile.add_coins(coins_earned)
+            profile.add_xp(xp_earned)
+            profile.trivia_correct += 1
             
             # Check achievements
             new_achievements = profile.check_achievements()
@@ -1324,11 +1327,11 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
     header += "### Level Progress\n"
     header += f"`{progress_bar}` {profile.xp}/{next_level_xp} XP\n\n"
     
-    # Stats in a clean format
-    header += "```ml\n"
-    header += f"PuroCoins  : 🪙 {profile.puro_coins:,}\n"
-    header += f"Games Won  : ���� {profile.games_won:,}\n"
-    header += f"Items     : 🎒 {len(profile.inventory):,}\n"
+    # Stats in a clean format with proper emojis
+    header += "```\n"
+    header += f"PuroCoins : {profile.puro_coins:,} 💰\n"
+    header += f"Games Won : {profile.games_won:,} 🎮\n"
+    header += f"Items    : {len(profile.inventory):,} 🎒\n"
     header += "```\n"
     
     embed.description = header
@@ -1343,7 +1346,7 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
         )
     
     # Recent Achievements
-    recent_achievements = [ach for ach in profile.achievements][-3:]  # Get last 3 achievements
+    recent_achievements = list(profile.achievements)[-3:]  # Get last 3 achievements
     if recent_achievements:
         achievements_text = "\n".join([
             f"{ACHIEVEMENTS[ach]['emoji']} **{ACHIEVEMENTS[ach]['name']}**"
@@ -1366,8 +1369,6 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
     
     # Set thumbnail and footer
     embed.set_thumbnail(url=target_user.avatar.url if target_user.avatar else target_user.default_avatar.url)
-    
-    # Format join date nicely
     join_date = target_user.created_at.strftime("%B %d, %Y")
     embed.set_footer(
         text=f"Member since: {join_date}",
