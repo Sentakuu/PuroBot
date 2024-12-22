@@ -391,7 +391,7 @@ PURO_COMFORT_GIFS = [
 ]
 
 # Constants at the top of the file
-COIN_EMOJI = ":coin:"  # Discord's native coin emoji
+COIN_EMOJI = "💰"  # Money bag emoji
 HUG_EMOJI = "🤗"  # Hug emoji for comfort messages
 STREAK_EMOJI = "⭐"  # Star emoji for streaks
 FILLED_STREAK_EMOJI = "🌟"  # Filled star for active streak
