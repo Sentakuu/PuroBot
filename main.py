@@ -1,6 +1,6 @@
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 import os
 import random
 import base64
@@ -12,6 +12,18 @@ import re
 # Bot setup with all intents
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="p!", intents=intents)
+
+# Add guess number game configuration
+GUESS_GAME_CONFIG = {
+    "channel_id": None,
+    "current_number": None,
+    "active_game": False,
+    "last_game_time": None,
+    "min_number": 1,
+    "max_number": 100,
+    "winners": set(),
+    "interval_minutes": 20  # Default interval
+}
 
 # Constants
 OWNER_ROLE_NAME = "Puro"
@@ -1151,38 +1163,74 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
     
     # Calculate level progress
     next_level_xp = profile.level * 100
-    progress = int((profile.xp / next_level_xp) * 10)
-    progress_bar = "█" * progress + "░" * (10 - progress)
+    progress = int((profile.xp / next_level_xp) * 20)  # Using 20 blocks for smoother bar
+    progress_bar = "▰" * progress + "▱" * (20 - progress)
     
-    embed = discord.Embed(
-        title=f"{target_user.name}'s Profile",
-        description=f"**{TITLES[profile.title]['name']}**\n*{TITLES[profile.title]['description']}*",
-        color=0x000000
-    )
-    
-    # Level and XP
-    embed.add_field(
-        name="Level Progress",
-        value=f"Level {profile.level}\n{progress_bar} {profile.xp}/{next_level_xp} XP",
-        inline=False
-    )
-    
-    # Badges
-    if profile.badges:
-        badges_text = " ".join([BADGES[badge]["emoji"] for badge in profile.badges])
-        embed.add_field(name="Badges", value=badges_text, inline=False)
-    
-    # Stats
-    embed.add_field(name="PuroCoins", value=f"🪙 {profile.puro_coins}", inline=True)
-    embed.add_field(name="Games Won", value=f"🎮 {profile.games_won}", inline=True)
-    embed.add_field(name="Items Owned", value=f"🎒 {len(profile.inventory)}", inline=True)
+    # Create main embed
+    embed = discord.Embed(color=0x2b2d31)  # Discord dark theme color
     
     # Set banner if available
     if profile.banner in BANNERS:
         embed.set_image(url=BANNERS[profile.banner]["url"])
     
+    # Profile Header
+    header = f"# {target_user.name}'s Profile\n"
+    header += f"> {TITLES[profile.title]['name']} • Level {profile.level}\n"
+    header += f"> *{TITLES[profile.title]['description']}*\n\n"
+    
+    # Level and XP with custom progress bar
+    header += "### Level Progress\n"
+    header += f"`{progress_bar}` {profile.xp}/{next_level_xp} XP\n\n"
+    
+    # Stats in a clean format
+    header += "```ml\n"
+    header += f"PuroCoins  : 🪙 {profile.puro_coins:,}\n"
+    header += f"Games Won  : 🎮 {profile.games_won:,}\n"
+    header += f"Items     : 🎒 {len(profile.inventory):,}\n"
+    header += "```\n"
+    
+    embed.description = header
+    
+    # Badges Section
+    if profile.badges:
+        badges_text = " ".join([BADGES[badge]["emoji"] for badge in profile.badges])
+        embed.add_field(
+            name="🏆 Badges",
+            value=badges_text or "No badges yet",
+            inline=False
+        )
+    
+    # Recent Achievements
+    recent_achievements = [ach for ach in profile.achievements][-3:]  # Get last 3 achievements
+    if recent_achievements:
+        achievements_text = "\n".join([
+            f"{ACHIEVEMENTS[ach]['emoji']} **{ACHIEVEMENTS[ach]['name']}**"
+            for ach in recent_achievements
+        ])
+        embed.add_field(
+            name="🌟 Recent Achievements",
+            value=achievements_text,
+            inline=False
+        )
+    
+    # Daily Streak if any
+    if profile.daily_streak > 0:
+        streak_bar = "🌟 " * profile.daily_streak + "⭐ " * (7 - profile.daily_streak)
+        embed.add_field(
+            name="📅 Daily Streak",
+            value=f"Day {profile.daily_streak} of 7\n{streak_bar}",
+            inline=False
+        )
+    
+    # Set thumbnail and footer
     embed.set_thumbnail(url=target_user.avatar.url if target_user.avatar else target_user.default_avatar.url)
-    embed.set_footer(text=f"Profile created: {target_user.created_at.strftime('%Y-%m-%d')}")
+    
+    # Format join date nicely
+    join_date = target_user.created_at.strftime("%B %d, %Y")
+    embed.set_footer(
+        text=f"Member since: {join_date}",
+        icon_url=bot.user.avatar.url
+    )
     
     await interaction.response.send_message(embed=embed)
 
@@ -1424,6 +1472,160 @@ async def view_achievements(interaction: discord.Interaction):
                 inline=False
             )
             await interaction.channel.send(embed=reward_embed)
+
+@bot.tree.command(name="setguessinterval", description="Set how often the guess number game should run")
+@commands.has_permissions(administrator=True)
+async def set_guess_interval(interaction: discord.Interaction, value: int, unit: str):
+    """Set the interval for the guess number game
+    Parameters:
+    value: The number of time units
+    unit: minutes/hours/days
+    """
+    unit = unit.lower()
+    if unit not in ['minutes', 'hours', 'days', 'minute', 'hour', 'day']:
+        await interaction.response.send_message("Please use 'minutes', 'hours', or 'days' as the time unit!", ephemeral=True)
+        return
+    
+    # Convert everything to minutes
+    if unit.startswith('hour'):
+        minutes = value * 60
+    elif unit.startswith('day'):
+        minutes = value * 24 * 60
+    else:
+        minutes = value
+    
+    # Minimum 5 minutes, maximum 7 days
+    if minutes < 5:
+        await interaction.response.send_message("The interval cannot be less than 5 minutes!", ephemeral=True)
+        return
+    if minutes > 10080:  # 7 days in minutes
+        await interaction.response.send_message("The interval cannot be more than 7 days!", ephemeral=True)
+        return
+    
+    # Update the configuration
+    GUESS_GAME_CONFIG["interval_minutes"] = minutes
+    
+    # Restart the task with new interval if it's running
+    if guess_number_game.is_running():
+        guess_number_game.cancel()
+        guess_number_game.change_interval(minutes=minutes)
+        guess_number_game.start()
+    
+    # Format time for display
+    if minutes < 60:
+        time_str = f"{minutes} minutes"
+    elif minutes < 1440:
+        hours = minutes // 60
+        time_str = f"{hours} hour{'s' if hours != 1 else ''}"
+    else:
+        days = minutes // 1440
+        time_str = f"{days} day{'s' if days != 1 else ''}"
+    
+    embed = discord.Embed(
+        title="⚙️ Guess Game Interval Updated",
+        description=f"The guess number game will now run every **{time_str}**!",
+        color=0x00FF00
+    )
+    embed.set_footer(text="Use /setguesschannel to start the game in a channel")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="setguesschannel", description="Set the channel for the automated guess number game")
+@commands.has_permissions(administrator=True)
+async def set_guess_channel(interaction: discord.Interaction, channel: discord.TextChannel):
+    GUESS_GAME_CONFIG["channel_id"] = channel.id
+    await interaction.response.send_message(f"Guess the number game channel set to {channel.mention}!")
+    if not guess_number_game.is_running():
+        guess_number_game.start()
+
+@tasks.loop(minutes=20)  # Default interval, will be changed by setguessinterval
+async def guess_number_game():
+    if GUESS_GAME_CONFIG["channel_id"] is None:
+        return
+        
+    channel = bot.get_channel(GUESS_GAME_CONFIG["channel_id"])
+    if channel is None:
+        return
+
+    # End previous game if it exists
+    if GUESS_GAME_CONFIG["active_game"]:
+        await channel.send(f"Previous game ended! The number was {GUESS_GAME_CONFIG['current_number']}.")
+        if not GUESS_GAME_CONFIG["winners"]:
+            await channel.send("No one guessed the number correctly!")
+    
+    # Start new game
+    GUESS_GAME_CONFIG["current_number"] = random.randint(GUESS_GAME_CONFIG["min_number"], GUESS_GAME_CONFIG["max_number"])
+    GUESS_GAME_CONFIG["active_game"] = True
+    GUESS_GAME_CONFIG["winners"].clear()
+    GUESS_GAME_CONFIG["last_game_time"] = datetime.datetime.now()
+    
+    # Calculate when the next game will be
+    next_game = datetime.datetime.now() + datetime.timedelta(minutes=GUESS_GAME_CONFIG["interval_minutes"])
+    
+    embed = discord.Embed(
+        title="🎲 Guess the Number!",
+        description=f"I'm thinking of a number between {GUESS_GAME_CONFIG['min_number']} and {GUESS_GAME_CONFIG['max_number']}!\nType your guess in the chat!",
+        color=0x00FF00
+    )
+    
+    # Format next game time
+    if GUESS_GAME_CONFIG["interval_minutes"] < 60:
+        time_str = f"{GUESS_GAME_CONFIG['interval_minutes']} minutes"
+    elif GUESS_GAME_CONFIG["interval_minutes"] < 1440:
+        hours = GUESS_GAME_CONFIG["interval_minutes"] // 60
+        time_str = f"{hours} hour{'s' if hours != 1 else ''}"
+    else:
+        days = GUESS_GAME_CONFIG["interval_minutes"] // 1440
+        time_str = f"{days} day{'s' if days != 1 else ''}"
+    
+    embed.set_footer(text=f"Game will end in {time_str}!")
+    await channel.send(embed=embed)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    await bot.process_commands(message)
+    
+    # Check if message is in guess game channel and game is active
+    if (GUESS_GAME_CONFIG["channel_id"] == message.channel.id and 
+        GUESS_GAME_CONFIG["active_game"] and 
+        message.author.id not in GUESS_GAME_CONFIG["winners"]):
+        
+        try:
+            guess = int(message.content)
+            if guess == GUESS_GAME_CONFIG["current_number"]:
+                GUESS_GAME_CONFIG["winners"].add(message.author.id)
+                profile = get_user_profile(message.author.id)
+                reward_coins = 50
+                reward_xp = 25
+                
+                profile.add_coins(reward_coins)
+                profile.add_xp(reward_xp)
+                
+                embed = discord.Embed(
+                    title="🎉 Correct Guess!",
+                    description=f"Congratulations {message.author.mention}! You guessed the number!\n\nRewards:\n🪙 {reward_coins} PuroCoins\n✨ {reward_xp} XP",
+                    color=0x00FF00
+                )
+                await message.channel.send(embed=embed)
+            elif guess < GUESS_GAME_CONFIG["current_number"]:
+                await message.add_reaction("⬆️")
+            else:
+                await message.add_reaction("⬇️")
+        except ValueError:
+            pass  # Not a number, ignore
+
+@bot.tree.command(name="stopguess", description="Stop the automated guess number game")
+@commands.has_permissions(administrator=True)
+async def stop_guess_game(interaction: discord.Interaction):
+    if guess_number_game.is_running():
+        guess_number_game.cancel()
+        GUESS_GAME_CONFIG["channel_id"] = None
+        GUESS_GAME_CONFIG["active_game"] = False
+        await interaction.response.send_message("Automated guess number game has been stopped!")
+    else:
+        await interaction.response.send_message("The game is not currently running!")
 
 # Run the bot
 bot.run(os.getenv('DISCORD_TOKEN'))
