@@ -280,7 +280,7 @@ async def social_media(interaction: discord.Interaction):
     # Twitch with stream note
     embed.add_field(
         name="<:Twitch:1320208844109910067> Twitch",
-        value=f"[arionyxcz]({SOCIAL_LINKS['Twitch']})\n*I stream sometimes!* 🎥",
+        value=f"[arionyxcz]({SOCIAL_LINKS['Twitch']})",
         inline=True
     )
     
