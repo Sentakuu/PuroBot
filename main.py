@@ -72,6 +72,34 @@ SOCIAL_LINKS = {
     "Minecraft": "Arionyxx"
 }
 
+MINIGAME_COOLDOWNS = {}  # To prevent spam
+COOLDOWN_TIME = 30  # seconds between games
+
+class UserProfile:
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.level = 1
+        self.xp = 0
+        self.puro_coins = 0
+        self.last_game_time = 0
+
+user_profiles = {}
+
+def get_user_profile(user_id):
+    if user_id not in user_profiles:
+        user_profiles[user_id] = UserProfile(user_id)
+    return user_profiles[user_id]
+
+def check_cooldown(user_id):
+    if user_id in MINIGAME_COOLDOWNS:
+        time_diff = datetime.datetime.now().timestamp() - MINIGAME_COOLDOWNS[user_id]
+        if time_diff < COOLDOWN_TIME:
+            return int(COOLDOWN_TIME - time_diff)
+    return 0
+
+def update_cooldown(user_id):
+    MINIGAME_COOLDOWNS[user_id] = datetime.datetime.now().timestamp()
+
 @bot.event
 async def on_ready():
     print(f'🐺 {bot.user} is ready to spread some latex love!')
@@ -101,7 +129,7 @@ async def transfur(interaction: discord.Interaction):
             description=response,
             color=0x000000
         )
-        embed.set_author(name="Puro's Latex Magic ✨", icon_url=bot.user.avatar.url)
+        embed.set_author(name="Puro's Latex Magic ��", icon_url=bot.user.avatar.url)
         await interaction.response.send_message(embed=embed)
     else:
         await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
@@ -257,6 +285,14 @@ async def help_command(interaction: discord.Interaction):
         """
     embed.add_field(name="🎮 Fun", value=fun_cmds.strip(), inline=False)
     
+    # Minigames
+    games_cmds = """
+    `/unscramble` - Unscramble Changed-themed words
+    `/trivia` - Test your Changed knowledge
+    `/guess` - Guess Puro's number (1-10)
+    """
+    embed.add_field(name="🎲 Minigames", value=games_cmds.strip(), inline=False)
+    
     embed.set_footer(text="Use / to access commands! 💫")
     embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
     
@@ -308,6 +344,195 @@ async def social_media(interaction: discord.Interaction):
     embed.set_footer(text="Feel free to follow and say hi! 👋")
     embed.set_author(name="Social Media Links", icon_url=bot.user.avatar.url)
     
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="unscramble", description="Unscramble Changed-themed words!")
+async def unscramble(interaction: discord.Interaction):
+    # Check cooldown
+    cooldown = check_cooldown(interaction.user.id)
+    if cooldown > 0:
+        await interaction.response.send_message(f"*Puro is still preparing the next game!* Please wait {cooldown} seconds! 🎮", ephemeral=True)
+        return
+
+    # Words related to Changed/Puro theme
+    WORDS = [
+        "latex", "puro", "changed", "transfur", "creature", "library", "crystal", "friend", 
+        "dragon", "wolf", "tiger", "shark", "experiment", "science", "laboratory"
+    ]
+    
+    # Pick a random word and scramble it
+    word = random.choice(WORDS)
+    scrambled = ''.join(random.sample(word, len(word)))
+    
+    embed = discord.Embed(
+        title="🎮 Unscramble the Word!",
+        description=f"Can you unscramble this word?\n\n**{scrambled}**\n\n*You have 30 seconds to answer!*",
+        color=0x000000
+    )
+    embed.set_footer(text="Type your answer in chat!")
+    embed.set_author(name="Puro's Word Game", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+    update_cooldown(interaction.user.id)
+
+    def check(m):
+        return m.author == interaction.user and m.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for('message', timeout=30.0, check=check)
+        
+        if msg.content.lower() == word:
+            profile = get_user_profile(interaction.user.id)
+            coins_earned = random.randint(10, 20)
+            xp_earned = random.randint(5, 15)
+            profile.puro_coins += coins_earned
+            profile.xp += xp_earned
+            
+            win_embed = discord.Embed(
+                title="🎉 Correct!",
+                description=f"You unscrambled the word **{word}**!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP",
+                color=0x00FF00
+            )
+            win_embed.set_footer(text="Great job! Keep playing to earn more rewards!")
+            await interaction.channel.send(embed=win_embed)
+        else:
+            lose_embed = discord.Embed(
+                title="❌ Not quite!",
+                description=f"The word was **{word}**. Try again next time!",
+                color=0xFF0000
+            )
+            lose_embed.set_footer(text="Don't give up! Practice makes perfect!")
+            await interaction.channel.send(embed=lose_embed)
+    except TimeoutError:
+        timeout_embed = discord.Embed(
+            title="⏰ Time's Up!",
+            description=f"The word was **{word}**. Better luck next time!",
+            color=0xFF0000
+        )
+        timeout_embed.set_footer(text="Try again! You'll get it!")
+        await interaction.channel.send(embed=timeout_embed)
+
+@bot.tree.command(name="trivia", description="Test your Changed knowledge!")
+async def trivia(interaction: discord.Interaction):
+    # Check cooldown
+    cooldown = check_cooldown(interaction.user.id)
+    if cooldown > 0:
+        await interaction.response.send_message(f"*Puro is still preparing the next question!* Please wait {cooldown} seconds! 🎮", ephemeral=True)
+        return
+
+    TRIVIA_QUESTIONS = [
+        {
+            "question": "What color is Puro?",
+            "answer": "black",
+            "options": ["Black", "White", "Gray", "Blue"]
+        },
+        {
+            "question": "Where does Puro first meet Colin?",
+            "answer": "library",
+            "options": ["Library", "Laboratory", "Warehouse", "School"]
+        },
+        {
+            "question": "What type of creature is Puro?",
+            "answer": "latex",
+            "options": ["Latex", "Slime", "Ghost", "Shadow"]
+        },
+        {
+            "question": "What game is Puro from?",
+            "answer": "changed",
+            "options": ["Changed", "Altered", "Transformed", "Shifted"]
+        }
+        # Add more questions as needed
+    ]
+    
+    question = random.choice(TRIVIA_QUESTIONS)
+    
+    embed = discord.Embed(
+        title="🎯 Changed Trivia",
+        description=f"**{question['question']}**\n\n*You have 30 seconds to answer!*",
+        color=0x000000
+    )
+    
+    for i, option in enumerate(question['options'], 1):
+        embed.add_field(name=f"Option {i}", value=option, inline=True)
+    
+    embed.set_footer(text="Type the answer in chat!")
+    embed.set_author(name="Puro's Trivia Game", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+    update_cooldown(interaction.user.id)
+
+    def check(m):
+        return m.author == interaction.user and m.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for('message', timeout=30.0, check=check)
+        
+        if msg.content.lower() == question['answer']:
+            profile = get_user_profile(interaction.user.id)
+            coins_earned = random.randint(15, 25)
+            xp_earned = random.randint(10, 20)
+            profile.puro_coins += coins_earned
+            profile.xp += xp_earned
+            
+            win_embed = discord.Embed(
+                title="🎉 Correct Answer!",
+                description=f"That's right!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP",
+                color=0x00FF00
+            )
+            win_embed.set_footer(text="Amazing knowledge! Keep it up!")
+            await interaction.channel.send(embed=win_embed)
+        else:
+            lose_embed = discord.Embed(
+                title="❌ Not Quite Right!",
+                description=f"The correct answer was **{question['answer'].title()}**. Try again next time!",
+                color=0xFF0000
+            )
+            lose_embed.set_footer(text="Keep learning about Changed!")
+            await interaction.channel.send(embed=lose_embed)
+    except TimeoutError:
+        timeout_embed = discord.Embed(
+            title="⏰ Time's Up!",
+            description=f"The correct answer was **{question['answer'].title()}**.",
+            color=0xFF0000
+        )
+        timeout_embed.set_footer(text="Be faster next time!")
+        await interaction.channel.send(embed=timeout_embed)
+
+@bot.tree.command(name="guess", description="Guess the number Puro is thinking of!")
+async def guess_number(interaction: discord.Interaction, number: int):
+    # Check cooldown
+    cooldown = check_cooldown(interaction.user.id)
+    if cooldown > 0:
+        await interaction.response.send_message(f"*Puro is still thinking of a new number!* Please wait {cooldown} seconds! 🎮", ephemeral=True)
+        return
+
+    if number < 1 or number > 10:
+        await interaction.response.send_message("*Puro tilts his head* Please guess a number between 1 and 10!", ephemeral=True)
+        return
+
+    correct = random.randint(1, 10)
+    profile = get_user_profile(interaction.user.id)
+    update_cooldown(interaction.user.id)
+
+    embed = discord.Embed(
+        title="🎲 Number Guessing Game",
+        color=0x000000
+    )
+
+    if number == correct:
+        coins_earned = random.randint(5, 15)
+        xp_earned = random.randint(3, 10)
+        profile.puro_coins += coins_earned
+        profile.xp += xp_earned
+        
+        embed.description = f"🎉 **You got it!** The number was {correct}!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP"
+        embed.color = 0x00FF00
+    else:
+        embed.description = f"Not quite! The number was {correct}. Try again next time!"
+        embed.color = 0xFF0000
+
+    embed.set_footer(text="Keep playing to earn more rewards!")
+    embed.set_author(name="Puro's Number Game", icon_url=bot.user.avatar.url)
     await interaction.response.send_message(embed=embed)
 
 # Run the bot
