@@ -301,6 +301,15 @@ ACHIEVEMENTS = {
     }
 }
 
+# Add Puro comfort GIFs at the top with other constants
+PURO_COMFORT_GIFS = [
+    "https://media1.tenor.com/m/S_pnQE1wbNwAAAAd/changed-puro.gif",  # Puro waving
+    "https://media1.tenor.com/m/E5_AUOTIL2kAAAAd/puro-changed.gif",  # Puro dancing
+    "https://media.tenor.com/fMxpOHq7hQ0AAAAj/pet-pet-puro.gif",  # Pet pet Puro
+    "https://media.tenor.com/B4c8gNAbeH0AAAAj/puro-changed.gif",  # Puro happy
+    "https://media1.tenor.com/m/0O2Eo4f2oc0AAAAd/puro-changed.gif"   # Puro cute
+]
+
 class UserProfile:
     def __init__(self, user_id):
         self.user_id = user_id
@@ -489,12 +498,46 @@ async def on_ready():
 @bot.tree.command(name="comfort", description="Get a comforting message from Puro when you're feeling down")
 async def comfort(interaction: discord.Interaction):
     response = random.choice(COMFORT_RESPONSES)
+    gif_url = random.choice(PURO_COMFORT_GIFS)
+    
     embed = discord.Embed(
-        description=response,
-        color=0x000000
+        title="🖤 Puro's Comfort Corner",
+        description=f"# {interaction.user.name}...\n\n{response}",
+        color=0x2b2d31  # Discord dark theme color
     )
-    embed.set_author(name="Puro's Comfort Corner 🖤", icon_url=bot.user.avatar.url)
-    embed.set_footer(text="Remember, you're never alone! 🤗")
+    
+    # Add a random encouraging quote
+    quotes = [
+        "Every storm runs out of rain ✨",
+        "You're stronger than you know 💪",
+        "This too shall pass 🌟",
+        "Take it one step at a time 🐾",
+        "You're not alone in this journey 🤗"
+    ]
+    embed.add_field(
+        name="Remember...",
+        value=random.choice(quotes),
+        inline=False
+    )
+    
+    # Add tips for self-care
+    tips = [
+        "🫂 Reach out to friends",
+        "🧘 Take deep breaths",
+        "🎵 Listen to music",
+        "🚶 Go for a walk",
+        "💭 Write your feelings"
+    ]
+    embed.add_field(
+        name="Self-Care Tips",
+        value="\n".join(random.sample(tips, 3)),  # Show 3 random tips
+        inline=False
+    )
+    
+    embed.set_thumbnail(url=bot.user.avatar.url)
+    embed.set_image(url=gif_url)
+    embed.set_footer(text="You're valued and appreciated! 🖤")
+    
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="transfur", description="Get transfurred by Puro! (Requires Puro role)")
@@ -505,7 +548,7 @@ async def transfur(interaction: discord.Interaction):
             description=response,
             color=0x000000
         )
-        embed.set_author(name="Puro's Latex Magic ��", icon_url=bot.user.avatar.url)
+        embed.set_author(name="Puro's Latex Magic", icon_url=bot.user.avatar.url)
         await interaction.response.send_message(embed=embed)
     else:
         await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
@@ -578,7 +621,7 @@ async def generate_password(interaction: discord.Interaction, length: int = 16):
     has_special = any(c in string.punctuation for c in password)
     
     strength = sum([has_upper, has_lower, has_digit, has_special])
-    strength_text = ["Weak 😟", "Moderate 🤔", "Strong 😊", "Very Strong 💪"][strength-1]
+    strength_text = ["Weak ���", "Moderate 🤔", "Strong 😊", "Very Strong 💪"][strength-1]
     
     # Send password in DM for security
     try:
@@ -1185,7 +1228,7 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
     # Stats in a clean format
     header += "```ml\n"
     header += f"PuroCoins  : 🪙 {profile.puro_coins:,}\n"
-    header += f"Games Won  : 🎮 {profile.games_won:,}\n"
+    header += f"Games Won  : ���� {profile.games_won:,}\n"
     header += f"Items     : 🎒 {len(profile.inventory):,}\n"
     header += "```\n"
     
