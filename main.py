@@ -2040,7 +2040,7 @@ async def unlock_achievements(interaction: discord.Interaction, user: discord.Me
     await interaction.response.send_message(embed=summary_embed)
 
 class Giveaway:
-    def __init__(self, message_id, channel_id, prize, winners, end_time, host_id, required_role=None, dm_message=None):
+    def __init__(self, message_id, channel_id, prize, winners, end_time, host_id, required_role=None, dm_message=None, unique_prizes=None):
         self.message_id = message_id
         self.channel_id = channel_id
         self.prize = prize
@@ -2050,6 +2050,7 @@ class Giveaway:
         self.required_role = required_role
         self.dm_message = dm_message
         self.participants = set()
+        self.unique_prizes = unique_prizes or []  # List of individual prizes/keys
 
     def add_participant(self, user_id):
         self.participants.add(user_id)
@@ -2106,16 +2107,53 @@ async def create_giveaway(
     required_role: Role required to enter (optional)
     dm_message: Custom message to send to winners (optional)
     """
+    # First, let's collect the unique prizes if this is a key giveaway
+    unique_prizes = []
+    if "key" in prize.lower() or "code" in prize.lower():
+        modal_msg = await interaction.response.send_message(
+            "Please send each game key in separate messages. Send 'done' when finished.", 
+            ephemeral=True
+        )
+        
+        def check(m):
+            return m.author == interaction.user and m.channel == interaction.channel
+        
+        try:
+            while True:
+                msg = await bot.wait_for('message', timeout=300.0, check=check)
+                if msg.content.lower() == 'done':
+                    break
+                unique_prizes.append(msg.content)
+                try:
+                    await msg.delete()  # Delete the message containing the key
+                except:
+                    pass
+                await interaction.followup.send(
+                    f"Key {len(unique_prizes)} added! Send next key or 'done' to finish.", 
+                    ephemeral=True
+                )
+        except TimeoutError:
+            await interaction.followup.send("Giveaway creation timed out!", ephemeral=True)
+            return
+        
+        # Validate number of winners matches number of keys
+        if len(unique_prizes) != winners:
+            await interaction.followup.send(
+                f"Number of winners ({winners}) must match number of keys provided ({len(unique_prizes)})!", 
+                ephemeral=True
+            )
+            return
+    
     # Validate winners count
     if winners < 1:
-        await interaction.response.send_message("You must have at least 1 winner!", ephemeral=True)
+        await interaction.followup.send("You must have at least 1 winner!", ephemeral=True)
         return
         
     # Parse duration
     duration_regex = re.compile(r"(\d+)([smhdw])")
     match = duration_regex.match(duration.lower())
     if not match:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "Invalid duration format! Use a number followed by s/m/h/d/w (e.g. 30s, 5m, 2h, 1d, 1w)",
             ephemeral=True
         )
@@ -2130,7 +2168,7 @@ async def create_giveaway(
     
     # Check maximum duration (30 days)
     if total_seconds > 2592000:  # 30 days in seconds
-        await interaction.response.send_message("Giveaway duration cannot exceed 30 days!", ephemeral=True)
+        await interaction.followup.send("Giveaway duration cannot exceed 30 days!", ephemeral=True)
         return
         
     # Calculate end time
@@ -2153,7 +2191,8 @@ async def create_giveaway(
     embed.set_image(url=GIVEAWAY_PURO_GIF)
     
     # Send giveaway message
-    await interaction.response.send_message("Creating giveaway...", ephemeral=True)
+    if not unique_prizes:  # If we haven't sent an initial response yet
+        await interaction.response.send_message("Creating giveaway...", ephemeral=True)
     giveaway_msg = await interaction.channel.send(embed=embed)
     await giveaway_msg.add_reaction(GIVEAWAY_EMOJI)
     
@@ -2166,7 +2205,8 @@ async def create_giveaway(
         end_time,
         interaction.user.id,
         required_role,
-        dm_message
+        dm_message,
+        unique_prizes
     )
     
     # Start checking task if not running
@@ -2206,7 +2246,7 @@ async def check_giveaways():
                     embed.description += f"**Hosted by:** <@{giveaway.host_id}>"
                     
                     # Send DM to winners
-                    for winner_id in winners:
+                    for i, winner_id in enumerate(winners):
                         try:
                             winner = await bot.fetch_user(winner_id)
                             if winner:
@@ -2215,6 +2255,14 @@ async def check_giveaways():
                                     description=f"You won the giveaway for:\n# {giveaway.prize}",
                                     color=0x00FF00
                                 )
+                                
+                                # Add the unique prize if available
+                                if giveaway.unique_prizes and i < len(giveaway.unique_prizes):
+                                    win_embed.add_field(
+                                        name="Your Game Key:",
+                                        value=f"```{giveaway.unique_prizes[i]}```",
+                                        inline=False
+                                    )
                                 
                                 if giveaway.dm_message:
                                     win_embed.add_field(
