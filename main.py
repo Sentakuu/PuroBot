@@ -786,68 +786,95 @@ async def decode_base64_cmd(interaction: discord.Interaction, encoded: str):
 
 @bot.tree.command(name="help", description="View all available commands")
 async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="Puro's Command List",
-        description="Here are all the available commands! 🐺",
-        color=0x000000
-    )
-    
-    # Utility Commands
-    utility_cmds = """
-    `/base64encode` - Encode text to base64
-    `/base64decode` - Decode base64 text
-    `/genname` - Generate a custom name
-    `/genpass` - Generate a secure password
-    `/mccolors` - View Minecraft color codes
-    `/socials` - View all my social media profiles
-    """
-    embed.add_field(name="🛠️ Utility", value=utility_cmds.strip(), inline=False)
-    
-    # Fun Commands - Only show transfur if user has Puro role
-    if discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
-        fun_cmds = """
-        `/comfort` - Get a comforting message when feeling down
-        `/transfur` - Get transfurred by Puro!
+    try:
+        # Defer the response since building the help embed might take a moment
+        await interaction.response.defer(ephemeral=False)
+        
+        embed = discord.Embed(
+            title="Puro's Command List",
+            description="Here are all the available commands! 🐺",
+            color=0x000000
+        )
+        
+        # Utility Commands
+        utility_cmds = """
+        `/base64encode` - Encode text to base64
+        `/base64decode` - Decode base64 text
+        `/genname` - Generate a custom name
+        `/genpass` - Generate a secure password
+        `/mccolors` - View Minecraft color codes
+        `/socials` - View all my social media profiles
         """
-    else:
-        fun_cmds = """
-        `/comfort` - Get a comforting message when feeling down
+        embed.add_field(name="🛠️ Utility", value=utility_cmds.strip(), inline=False)
+        
+        # Fun Commands - Only show transfur if user has Puro role
+        if discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+            fun_cmds = """
+            `/comfort` - Get a comforting message when feeling down
+            `/transfur` - Get transfurred by Puro!
+            """
+        else:
+            fun_cmds = """
+            `/comfort` - Get a comforting message when feeling down
+            """
+        embed.add_field(name="🎮 Fun", value=fun_cmds.strip(), inline=False)
+        
+        # Minigames
+        games_cmds = """
+        `/unscramble` - Unscramble Changed-themed words
+        `/trivia` - Test your Changed knowledge
+        `/guess` - Guess Puro's number (1-10)
+        `/daily` - Claim your daily reward!
         """
-    embed.add_field(name="🎮 Fun", value=fun_cmds.strip(), inline=False)
-    
-    # Minigames
-    games_cmds = """
-    `/unscramble` - Unscramble Changed-themed words
-    `/trivia` - Test your Changed knowledge
-    `/guess` - Guess Puro's number (1-10)
-    `/daily` - Claim your daily reward!
-    """
-    embed.add_field(name="🎲 Minigames", value=games_cmds.strip(), inline=False)
-    
-    # Shop Commands
-    shop_cmds = """
-    `/shop` - Browse Puro's shop
-    `/buy` - Purchase items from the shop
-    `/inventory` - View your items
-    """
-    embed.add_field(name="🛍️ Shop", value=shop_cmds.strip(), inline=False)
-    
-    # Profile Commands
-    profile_cmds = """
-    `/profile` - View your profile
-    `/titles` - View available titles
-    `/settitle` - Change your title
-    `/banners` - View available banners
-    `/buybanner` - Buy a new banner
-    `/setbanner` - Set your banner
-    `/achievements` - View your achievements
-    """
-    embed.add_field(name="👤 Profile", value=profile_cmds.strip(), inline=False)
-    
-    embed.set_footer(text="Use / to access commands! 💫")
-    embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
-    
-    await interaction.response.send_message(embed=embed)
+        embed.add_field(name="🎲 Minigames", value=games_cmds.strip(), inline=False)
+        
+        # Shop Commands
+        shop_cmds = """
+        `/shop` - Browse Puro's shop
+        `/buy` - Purchase items from the shop
+        `/inventory` - View your items
+        """
+        embed.add_field(name="🛍️ Shop", value=shop_cmds.strip(), inline=False)
+        
+        # Profile Commands
+        profile_cmds = """
+        `/profile` - View your profile
+        `/titles` - View available titles
+        `/settitle` - Change your title
+        `/banners` - View available banners
+        `/buybanner` - Buy a new banner
+        `/setbanner` - Set your banner
+        `/achievements` - View your achievements
+        """
+        embed.add_field(name="👤 Profile", value=profile_cmds.strip(), inline=False)
+        
+        # Giveaway Commands - Only show if user has admin permissions
+        if interaction.user.guild_permissions.administrator:
+            giveaway_cmds = """
+            `/giveaway` - Start a new giveaway
+            `/reroll` - Reroll a giveaway winner
+            `/setguessinterval` - Set guess game interval
+            `/setguesschannel` - Set guess game channel
+            `/stopguess` - Stop the guess game
+            """
+            embed.add_field(name="🎉 Giveaway", value=giveaway_cmds.strip(), inline=False)
+        
+        embed.set_footer(text="Use / to access commands! 💫")
+        embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
+        
+        # Use followup instead of response
+        await interaction.followup.send(embed=embed)
+        
+    except discord.NotFound:
+        # If the interaction is no longer valid, we'll just pass
+        pass
+    except Exception as e:
+        # Log any other errors
+        print(f"Error in help command: {str(e)}")
+        try:
+            await interaction.followup.send("An error occurred while showing the help menu. Please try again!", ephemeral=True)
+        except:
+            pass
 
 @bot.tree.command(name="socials", description="View Sentakuu's social media profiles!")
 async def social_media(interaction: discord.Interaction):
