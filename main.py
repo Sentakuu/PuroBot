@@ -1852,5 +1852,111 @@ async def clean_messages(interaction: discord.Interaction, amount: int):
     
     await interaction.followup.send(embed=embed, ephemeral=True)
 
+@bot.tree.command(name="setlevel", description="Set a user's level (Requires Puro role)")
+async def set_level(interaction: discord.Interaction, user: discord.Member, level: int):
+    if not discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+        await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
+        return
+        
+    if level < 1 or level > 100:
+        await interaction.response.send_message("Please choose a level between 1 and 100!", ephemeral=True)
+        return
+        
+    profile = get_user_profile(user.id)
+    profile.level = level
+    profile.xp = 0  # Reset XP for new level
+    
+    embed = discord.Embed(
+        title="Level Updated!",
+        description=f"Set {user.mention}'s level to **{level}**!",
+        color=0x00FF00
+    )
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="setcoins", description="Set a user's PuroCoins (Requires Puro role)")
+async def set_coins(interaction: discord.Interaction, user: discord.Member, amount: int):
+    if not discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+        await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
+        return
+        
+    if amount < 0:
+        await interaction.response.send_message("Amount cannot be negative!", ephemeral=True)
+        return
+        
+    profile = get_user_profile(user.id)
+    profile.puro_coins = amount
+    
+    embed = discord.Embed(
+        title="PuroCoins Updated!",
+        description=f"Set {user.mention}'s PuroCoins to **{amount}** {COIN_EMOJI}!",
+        color=0x00FF00
+    )
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="unlockall", description="Unlock all items and banners for a user (Requires Puro role)")
+async def unlock_all(interaction: discord.Interaction, user: discord.Member):
+    if not discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+        await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
+        return
+        
+    profile = get_user_profile(user.id)
+    
+    # Unlock all shop items
+    for item_id in SHOP_ITEMS:
+        if item_id not in profile.inventory:
+            profile.add_item(item_id)
+    
+    # Unlock all banners
+    for banner_id in BANNERS:
+        profile.owned_banners.add(banner_id)
+    
+    embed = discord.Embed(
+        title="🎉 Everything Unlocked!",
+        description=f"Unlocked all items and banners for {user.mention}!",
+        color=0x00FF00
+    )
+    embed.add_field(name="Items Unlocked", value=f"✨ {len(SHOP_ITEMS)} items", inline=True)
+    embed.add_field(name="Banners Unlocked", value=f"🎨 {len(BANNERS)} banners", inline=True)
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="unlockachievements", description="Unlock all achievements for a user (Requires Puro role)")
+async def unlock_achievements(interaction: discord.Interaction, user: discord.Member):
+    if not discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
+        await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
+        return
+        
+    profile = get_user_profile(user.id)
+    
+    # Unlock all achievements
+    for achievement_id in ACHIEVEMENTS:
+        if achievement_id not in profile.achievements:
+            achievement = profile.earn_achievement(achievement_id)
+            if achievement:
+                embed = discord.Embed(
+                    title="🎉 Achievement Unlocked!",
+                    description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                    color=0x00FF00
+                )
+                embed.add_field(
+                    name="Rewards",
+                    value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                    inline=False
+                )
+                await interaction.channel.send(embed=embed)
+    
+    summary_embed = discord.Embed(
+        title="🏆 All Achievements Unlocked!",
+        description=f"Unlocked all achievements for {user.mention}!",
+        color=0x00FF00
+    )
+    summary_embed.add_field(
+        name="Total Achievements",
+        value=f"✨ {len(ACHIEVEMENTS)} achievements unlocked",
+        inline=False
+    )
+    
+    await interaction.response.send_message(embed=summary_embed)
+
 # Run the bot
 bot.run(os.getenv('DISCORD_TOKEN'))
