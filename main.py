@@ -390,6 +390,21 @@ PURO_COMFORT_GIFS = [
     "https://media1.tenor.com/m/0O2Eo4f2oc0AAAAd/puro-changed.gif"   # Puro cute
 ]
 
+# Constants at the top of the file
+COIN_EMOJI = ":coin:"  # Discord's native coin emoji
+HUG_EMOJI = "🤗"  # Hug emoji for comfort messages
+STREAK_EMOJI = "⭐"  # Star emoji for streaks
+FILLED_STREAK_EMOJI = "🌟"  # Filled star for active streak
+
+# Update comfort tips
+COMFORT_TIPS = [
+    f"{HUG_EMOJI} Reach out to friends",
+    "🧘 Take deep breaths",
+    "🎵 Listen to music",
+    "🚶 Go for a walk",
+    "💭 Write your feelings"
+]
+
 class UserProfile:
     def __init__(self, user_id):
         self.user_id = user_id
@@ -923,7 +938,7 @@ async def unscramble(interaction: discord.Interaction):
             
             win_embed = discord.Embed(
                 title="🎉 Correct!",
-                description=f"You unscrambled the word **{word}**!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP",
+                description=f"You unscrambled the word **{word}**!\n\nRewards:\n{COIN_EMOJI} {coins_earned} PuroCoins\n✨ {xp_earned} XP",
                 color=0x00FF00
             )
             win_embed.set_footer(text="Great job! Keep playing to earn more rewards!")
@@ -939,7 +954,7 @@ async def unscramble(interaction: discord.Interaction):
                     )
                     reward_embed.add_field(
                         name="Rewards",
-                        value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                        value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
                         inline=False
                     )
                     await interaction.channel.send(embed=reward_embed)
@@ -1029,7 +1044,7 @@ async def trivia(interaction: discord.Interaction):
             
             win_embed = discord.Embed(
                 title="🎉 Correct Answer!",
-                description=f"That's right!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP",
+                description=f"That's right!\n\nRewards:\n{COIN_EMOJI} {coins_earned} PuroCoins\n✨ {xp_earned} XP",
                 color=0x00FF00
             )
             win_embed.set_footer(text="Amazing knowledge! Keep it up!")
@@ -1045,7 +1060,7 @@ async def trivia(interaction: discord.Interaction):
                     )
                     reward_embed.add_field(
                         name="Rewards",
-                        value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                        value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
                         inline=False
                     )
                     await interaction.channel.send(embed=reward_embed)
@@ -1097,7 +1112,7 @@ async def guess_number(interaction: discord.Interaction, number: int):
         # Check achievements
         new_achievements = profile.check_achievements()
         
-        embed.description = f"🎉 **You got it!** The number was {correct}!\n\nRewards:\n🪙 {coins_earned} PuroCoins\n✨ {xp_earned} XP"
+        embed.description = f"🎉 **You got it!** The number was {correct}!\n\nRewards:\n{COIN_EMOJI} {coins_earned} PuroCoins\n✨ {xp_earned} XP"
         embed.color = 0x00FF00
         
         # Show achievement notifications after the guess result
@@ -1110,7 +1125,7 @@ async def guess_number(interaction: discord.Interaction, number: int):
                 )
                 reward_embed.add_field(
                     name="Rewards",
-                    value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                    value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
                     inline=False
                 )
                 await interaction.channel.send(embed=reward_embed)
@@ -1147,7 +1162,7 @@ async def shop(interaction: discord.Interaction):
     
     def format_items(items):
         return "\n".join([
-            f"{SHOP_ITEMS[item_id]['emoji']} **{SHOP_ITEMS[item_id]['name']}** - {SHOP_ITEMS[item_id]['price']} 🪙\n*{SHOP_ITEMS[item_id]['description']}*"
+            f"{SHOP_ITEMS[item_id]['emoji']} **{SHOP_ITEMS[item_id]['name']}** - {SHOP_ITEMS[item_id]['price']} {COIN_EMOJI}\n*{SHOP_ITEMS[item_id]['description']}*"
             for item_id in items
         ])
     
@@ -1172,7 +1187,7 @@ async def shop(interaction: discord.Interaction):
             inline=False
         )
     
-    embed.set_footer(text=f"Your Balance: 🪙 {profile.puro_coins} PuroCoins | Use /buy <item> to purchase!")
+    embed.set_footer(text=f"Your Balance: {COIN_EMOJI} {profile.puro_coins} PuroCoins | Use /buy <item> to purchase!")
     embed.set_author(name="Shop", icon_url=bot.user.avatar.url)
     
     await interaction.response.send_message(embed=embed)
@@ -1218,12 +1233,12 @@ async def buy_item(interaction: discord.Interaction, item: str):
     )
     embed.add_field(
         name="Price Paid",
-        value=f"🪙 {shop_item['price']} PuroCoins",
+        value=f"{COIN_EMOJI} {shop_item['price']} PuroCoins",
         inline=True
     )
     embed.add_field(
         name="Remaining Balance",
-        value=f"🪙 {profile.puro_coins} PuroCoins",
+        value=f"{COIN_EMOJI} {profile.puro_coins} PuroCoins",
         inline=True
     )
     embed.set_footer(text="Thank you for shopping at Puro's! 🖤")
@@ -1237,7 +1252,7 @@ async def buy_item_autocomplete(
 ) -> list[app_commands.Choice[str]]:
     items = []
     for item_id, item in SHOP_ITEMS.items():
-        name = f"{item['emoji']} {item['name']} - {item['price']} 🪙"
+        name = f"{item['emoji']} {item['name']} - {item['price']} {COIN_EMOJI}"
         if current.lower() in name.lower():
             items.append(app_commands.Choice(name=name, value=item_id))
     return items[:25]  # Discord limits to 25 choices
@@ -1296,7 +1311,7 @@ async def view_inventory(interaction: discord.Interaction):
                 inline=False
             )
     
-    embed.set_footer(text=f"Balance: 🪙 {profile.puro_coins} PuroCoins")
+    embed.set_footer(text=f"Balance: {COIN_EMOJI} {profile.puro_coins} PuroCoins")
     embed.set_author(name="Inventory", icon_url=bot.user.avatar.url)
     
     await interaction.response.send_message(embed=embed)
@@ -1360,7 +1375,7 @@ async def view_profile(interaction: discord.Interaction, user: discord.Member = 
     
     # Daily Streak if any
     if profile.daily_streak > 0:
-        streak_bar = "🌟 " * profile.daily_streak + "⭐ " * (7 - profile.daily_streak)
+        streak_bar = f"{FILLED_STREAK_EMOJI} " * profile.daily_streak + f"{STREAK_EMOJI} " * (7 - profile.daily_streak)
         embed.add_field(
             name="📅 Daily Streak",
             value=f"Day {profile.daily_streak} of 7\n{streak_bar}",
@@ -1435,7 +1450,7 @@ async def view_banners(interaction: discord.Interaction):
     for banner_id, banner in BANNERS.items():
         # Add indicators for owned/equipped banners
         status = "✨ " if banner_id == profile.banner else "✅ " if banner_id in profile.owned_banners else ""
-        price_text = "Owned" if banner_id in profile.owned_banners else f"🪙 {banner['price']} PuroCoins"
+        price_text = "Owned" if banner_id in profile.owned_banners else f"{COIN_EMOJI} {banner['price']} PuroCoins"
         
         embed.add_field(
             name=f"{status}{banner['name']}",
@@ -1466,8 +1481,8 @@ async def buy_banner(interaction: discord.Interaction, banner: str):
             description=f"You bought the **{banner_data['name']}** banner!\n\n*{banner_data['description']}*",
             color=0x00FF00
         )
-        embed.add_field(name="Price Paid", value=f"🪙 {banner_data['price']} PuroCoins")
-        embed.add_field(name="Remaining Balance", value=f"🪙 {profile.puro_coins} PuroCoins")
+        embed.add_field(name="Price Paid", value=f"{COIN_EMOJI} {banner_data['price']} PuroCoins")
+        embed.add_field(name="Remaining Balance", value=f"{COIN_EMOJI} {profile.puro_coins} PuroCoins")
         embed.set_footer(text="Use /setbanner to equip your new banner!")
         await interaction.response.send_message(embed=embed)
     else:
@@ -1519,12 +1534,12 @@ async def daily_reward(interaction: discord.Interaction):
     
     embed = discord.Embed(
         title="🎁 Daily Reward Claimed!",
-        description=f"**{rewards['description']}**\n\nYou received:\n🪙 {rewards['coins']} PuroCoins\n✨ {rewards['xp']} XP",
+        description=f"**{rewards['description']}**\n\nYou received:\n{COIN_EMOJI} {rewards['coins']} PuroCoins\n✨ {rewards['xp']} XP",
         color=0x00FF00
     )
     
     # Show streak information
-    streak_bar = "🌟 " * profile.daily_streak + "⭐ " * (7 - profile.daily_streak)
+    streak_bar = f"{FILLED_STREAK_EMOJI} " * profile.daily_streak + f"{STREAK_EMOJI} " * (7 - profile.daily_streak)
     embed.add_field(
         name="Daily Streak",
         value=f"Day {profile.daily_streak} of 7\n{streak_bar}",
@@ -1536,7 +1551,7 @@ async def daily_reward(interaction: discord.Interaction):
         next_rewards = DAILY_REWARDS[profile.daily_streak + 1]
         embed.add_field(
             name="Next Day's Reward",
-            value=f"🪙 {next_rewards['coins']} PuroCoins\n✨ {next_rewards['xp']} XP",
+            value=f"{COIN_EMOJI} {next_rewards['coins']} PuroCoins\n✨ {next_rewards['xp']} XP",
             inline=False
         )
     
@@ -1569,7 +1584,7 @@ async def view_achievements(interaction: discord.Interaction):
             continue
             
         status = "✅" if ach_id in profile.achievements else "❌"
-        text = f"{ach['emoji']} **{ach['name']}**\n*{ach['description']}*\nRewards: 🪙 {ach['reward_coins']} PuroCoins, ✨ {ach['reward_xp']} XP"
+        text = f"{ach['emoji']} **{ach['name']}**\n*{ach['description']}*\nRewards: {COIN_EMOJI} {ach['reward_coins']} PuroCoins, ✨ {ach['reward_xp']} XP"
         
         if ach_id in profile.achievements:
             completed.append(f"{status} {text}")
@@ -1611,7 +1626,7 @@ async def view_achievements(interaction: discord.Interaction):
             )
             reward_embed.add_field(
                 name="Rewards",
-                value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
                 inline=False
             )
             await interaction.channel.send(embed=reward_embed)
@@ -1752,7 +1767,7 @@ async def on_message(message):
                 
                 embed = discord.Embed(
                     title="🎉 Correct Guess!",
-                    description=f"Congratulations {message.author.mention}! You guessed the number!\n\nRewards:\n🪙 {reward_coins} PuroCoins\n✨ {reward_xp} XP",
+                    description=f"Congratulations {message.author.mention}! You guessed the number!\n\nRewards:\n{COIN_EMOJI} {reward_coins} PuroCoins\n✨ {reward_xp} XP",
                     color=0x00FF00
                 )
                 await message.channel.send(embed=embed)
@@ -1767,7 +1782,7 @@ async def on_message(message):
                         )
                         reward_embed.add_field(
                             name="Rewards",
-                            value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                            value=f"{COIN_EMOJI} {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
                             inline=False
                         )
                         await message.channel.send(embed=reward_embed)
