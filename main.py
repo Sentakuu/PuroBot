@@ -199,7 +199,7 @@ async def encode_base64_cmd(interaction: discord.Interaction, text: str):
     embed.set_footer(text="Powered by Puro's Lab 🧪")
     embed.set_author(name="Base64 Encoder", icon_url=bot.user.avatar.url)
     
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="base64decode", description="Decode base64 text")
 async def decode_base64_cmd(interaction: discord.Interaction, encoded: str):
@@ -214,7 +214,7 @@ async def decode_base64_cmd(interaction: discord.Interaction, encoded: str):
         embed.set_footer(text="Powered by Puro's Lab 🧪")
         embed.set_author(name="Base64 Decoder", icon_url=bot.user.avatar.url)
         
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     except:
         await interaction.response.send_message("*Puro scratches his head* That doesn't look like valid base64...", ephemeral=True)
 
