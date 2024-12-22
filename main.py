@@ -1,23 +1,17 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import os
 import random
 import base64
-import names
 import string
 import secrets
-import json
-import requests
 import datetime
-
-# Get environment variables (from Railway)
-TOKEN = os.getenv('DISCORD_TOKEN')
-FORTNITE_API_KEY = os.getenv('FORTNITE_API_KEY')
-RIOT_API_KEY = os.getenv('RIOT_API_KEY')
+import re
 
 # Bot setup with all intents
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='p!', intents=intents)
+bot = commands.Bot(command_prefix="p!", intents=intents)
 
 # Constants
 OWNER_ROLE_NAME = "Puro"
@@ -28,200 +22,231 @@ TRANSFUR_RESPONSES = [
     "*The transformation begins, your form shifting into a latex being*"
 ]
 
+COMFORT_RESPONSES = [
+    "Hey there! *Puro gives you a warm, comforting hug* Everything will be okay! 🖤",
+    "*Puro sits next to you* I'm here to listen if you want to talk about anything!",
+    "You're stronger than you think! *Puro offers a supportive pat* 🖤",
+    "*Puro wraps you in a cozy blanket* Take all the time you need to rest.",
+    "Remember, it's okay not to be okay. *Puro offers a shoulder to lean on*",
+    "*Puro brings you some hot chocolate* Let's take a break together!",
+    "You're not alone in this. *Puro sits quietly beside you* 🖤",
+    "*Puro shows you cute pictures of latex creatures* Hope this makes you smile!",
+    "Every storm passes eventually. *Puro holds your hand supportively*",
+    "You're doing great, even if it doesn't feel like it! *Puro gives encouraging headpats*",
+    "*Puro shares their favorite snacks with you* Sometimes a treat helps!",
+    "Your feelings are valid. *Puro listens attentively* 🖤",
+    "*Puro builds a cozy pillow fort* Want to hide from the world for a bit?",
+    "Take a deep breath with me! *Puro demonstrates calming breathing* In... and out...",
+    "*Puro brings you a warm towel* Let's wash away the stress!",
+    "You deserve all the happiness in the world! *Puro gives you a gentle hug*",
+    "*Puro shows you their collection of shiny things* Look at how they sparkle!",
+    "Remember to be kind to yourself! *Puro offers encouraging squeaks*",
+    "*Puro draws you a little heart* You're appreciated! 🖤",
+    "It's okay to take breaks. *Puro helps you find a comfy spot to rest*"
+]
+
 MINECRAFT_COLORS = {
-    "§0": "Black",
-    "§1": "Dark Blue",
-    "§2": "Dark Green",
-    "§3": "Dark Aqua",
-    "§4": "Dark Red",
-    "§5": "Dark Purple",
-    "§6": "Gold",
-    "§7": "Gray",
-    "§8": "Dark Gray",
-    "§9": "Blue",
-    "§a": "Green",
-    "§b": "Aqua",
-    "§c": "Red",
-    "§d": "Light Purple",
-    "§e": "Yellow",
-    "§f": "White",
-    "§k": "Obfuscated",
-    "§l": "Bold",
-    "§m": "Strikethrough",
-    "§n": "Underline",
-    "§o": "Italic",
-    "§r": "Reset"
+    "§0": {"name": "Black", "color": 0x000000},
+    "§1": {"name": "Dark Blue", "color": 0x0000AA},
+    "§2": {"name": "Dark Green", "color": 0x00AA00},
+    "§3": {"name": "Dark Aqua", "color": 0x00AAAA},
+    "§4": {"name": "Dark Red", "color": 0xAA0000},
+    "§5": {"name": "Dark Purple", "color": 0xAA00AA},
+    "§6": {"name": "Gold", "color": 0xFFAA00},
+    "§7": {"name": "Gray", "color": 0xAAAAAA},
+    "§8": {"name": "Dark Gray", "color": 0x555555},
+    "§9": {"name": "Blue", "color": 0x5555FF},
+    "§a": {"name": "Green", "color": 0x55FF55},
+    "§b": {"name": "Aqua", "color": 0x55FFFF},
+    "§c": {"name": "Red", "color": 0xFF5555},
+    "§d": {"name": "Light Purple", "color": 0xFF55FF},
+    "§e": {"name": "Yellow", "color": 0xFFFF55},
+    "§f": {"name": "White", "color": 0xFFFFFF}
 }
 
 @bot.event
 async def on_ready():
     print(f'🐺 {bot.user} is ready to spread some latex love!')
-    await bot.change_presence(activity=discord.Game(name="Changed | p!help"))
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(e)
+    await bot.change_presence(activity=discord.Game(name="/help for commands!"))
 
-@bot.command(name='transfur')
-async def transfur(ctx):
-    if discord.utils.get(ctx.author.roles, name=OWNER_ROLE_NAME):
+@bot.tree.command(name="comfort", description="Get a comforting message from Puro when you're feeling down")
+async def comfort(interaction: discord.Interaction):
+    response = random.choice(COMFORT_RESPONSES)
+    embed = discord.Embed(
+        description=response,
+        color=0x000000
+    )
+    embed.set_author(name="Puro's Comfort Corner 🖤", icon_url=bot.user.avatar.url)
+    embed.set_footer(text="Remember, you're never alone! 🤗")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="transfur", description="Get transfurred by Puro! (Requires Puro role)")
+async def transfur(interaction: discord.Interaction):
+    if discord.utils.get(interaction.user.roles, name=OWNER_ROLE_NAME):
         response = random.choice(TRANSFUR_RESPONSES)
-        await ctx.send(response)
+        embed = discord.Embed(
+            description=response,
+            color=0x000000
+        )
+        embed.set_author(name="Puro's Latex Magic ✨", icon_url=bot.user.avatar.url)
+        await interaction.response.send_message(embed=embed)
     else:
-        await ctx.send("*Puro looks at you confused* Only my special friend can use this command!")
+        await interaction.response.send_message("*Puro looks at you confused* Only my special friend can use this command!", ephemeral=True)
 
-@bot.command(name='fortnite')
-async def fortnite_stats(ctx, username: str):
-    if not FORTNITE_API_KEY:
-        await ctx.send("*Puro is sad* Fortnite API key is not configured!")
-        return
-
-    headers = {'Authorization': FORTNITE_API_KEY}
-    url = f'https://fortnite-api.com/v2/stats/br/v2?name={username}'
+@bot.tree.command(name="mccolors", description="View Minecraft color codes with actual colors!")
+async def minecraft_colors(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="Minecraft Color Codes",
+        description="Here are all the Minecraft color codes with examples!",
+        color=0x000000
+    )
     
-    try:
-        response = requests.get(url, headers=headers)
-        data = response.json()
-
-        if response.status_code == 200:
-            stats = data['data']['stats']['all']['overall']
-            embed = discord.Embed(title=f"Fortnite Stats for {username}", color=0x000000)
-            embed.add_field(name="Wins", value=stats['wins'], inline=True)
-            embed.add_field(name="Matches", value=stats['matches'], inline=True)
-            embed.add_field(name="Win Rate", value=f"{stats['winRate']}%", inline=True)
-            embed.add_field(name="Kills", value=stats['kills'], inline=True)
-            embed.add_field(name="K/D Ratio", value=stats['kd'], inline=True)
-            embed.set_footer(text="*Puro loves tracking stats! 📊*")
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("*Puro couldn't find that player* 😢")
-    except Exception as e:
-        await ctx.send("*Puro encountered an error fetching Fortnite stats* 😔")
-
-@bot.command(name='valorant')
-async def valorant_stats(ctx, username: str, tagline: str):
-    if not RIOT_API_KEY:
-        await ctx.send("*Puro is sad* Riot API key is not configured!")
-        return
-
-    headers = {'X-Riot-Token': RIOT_API_KEY}
+    # Group colors into categories
+    basics = ["§0", "§f", "§7", "§8"]
+    warm_colors = ["§c", "§6", "§e", "§4"]
+    cool_colors = ["§1", "§3", "§b", "§9"]
+    nature = ["§2", "§a", "§5", "§d"]
     
-    try:
-        # Get account info
-        account_url = f'https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{username}/{tagline}'
-        account_response = requests.get(account_url, headers=headers)
-        account_data = account_response.json()
-
-        if account_response.status_code == 200:
-            puuid = account_data['puuid']
-            
-            # Get ranked info
-            ranked_url = f'https://api.henrikdev.xyz/valorant/v1/mmr/na/{username}/{tagline}'
-            ranked_response = requests.get(ranked_url)
-            ranked_data = ranked_response.json()
-
-            embed = discord.Embed(title=f"Valorant Stats for {username}#{tagline}", color=0x000000)
-            
-            if ranked_response.status_code == 200:
-                embed.add_field(name="Current Rank", value=ranked_data['data']['currenttierpatched'], inline=True)
-                embed.add_field(name="Ranking in Tier", value=f"{ranked_data['data']['ranking_in_tier']}/100", inline=True)
-                embed.add_field(name="MMR Change", value=ranked_data['data']['mmr_change_to_last_game'], inline=True)
-            
-            embed.set_footer(text="*Puro believes in you! 🎮*")
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("*Puro couldn't find that Valorant player* 😢")
-    except Exception as e:
-        await ctx.send("*Puro encountered an error fetching Valorant stats* 😔")
-
-@bot.command(name='lol')
-async def league_stats(ctx, username: str, region: str = 'na1'):
-    if not RIOT_API_KEY:
-        await ctx.send("*Puro is sad* Riot API key is not configured!")
-        return
-
-    headers = {'X-Riot-Token': RIOT_API_KEY}
+    def create_color_field(codes):
+        return "\n".join([f"`{code}` {MINECRAFT_COLORS[code]['name']}" for code in codes])
     
-    try:
-        # Get summoner info
-        summoner_url = f'https://{region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{username}'
-        summoner_response = requests.get(summoner_url, headers=headers)
-        summoner_data = summoner_response.json()
+    embed.add_field(name="Basic Colors", value=create_color_field(basics), inline=True)
+    embed.add_field(name="Warm Colors", value=create_color_field(warm_colors), inline=True)
+    embed.add_field(name="Cool Colors", value=create_color_field(cool_colors), inline=True)
+    embed.add_field(name="Nature Colors", value=create_color_field(nature), inline=True)
+    
+    embed.add_field(
+        name="Formatting Codes",
+        value="`§k` Obfuscated\n`§l` Bold\n`§m` Strikethrough\n`§n` Underline\n`§o` Italic\n`§r` Reset",
+        inline=False
+    )
+    
+    embed.set_footer(text="Minecraft colors, Puro style! 🎨")
+    embed.set_author(name="Minecraft Color Guide", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
 
-        if summoner_response.status_code == 200:
-            summoner_id = summoner_data['id']
-            
-            # Get ranked info
-            ranked_url = f'https://{region}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}'
-            ranked_response = requests.get(ranked_url, headers=headers)
-            ranked_data = ranked_response.json()
-
-            embed = discord.Embed(title=f"League of Legends Stats for {username}", color=0x000000)
-            
-            if ranked_data:
-                for queue in ranked_data:
-                    if queue['queueType'] == 'RANKED_SOLO_5x5':
-                        embed.add_field(name="Ranked Solo/Duo", value=f"{queue['tier']} {queue['rank']}", inline=True)
-                        embed.add_field(name="LP", value=queue['leaguePoints'], inline=True)
-                        embed.add_field(name="Win Rate", value=f"{int((queue['wins']/(queue['wins']+queue['losses']))*100)}%", inline=True)
-                        embed.add_field(name="Wins/Losses", value=f"{queue['wins']}W/{queue['losses']}L", inline=True)
-            
-            embed.set_footer(text="*Puro cheers for your victories! 🏆*")
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("*Puro couldn't find that League player* 😢")
-    except Exception as e:
-        await ctx.send("*Puro encountered an error fetching League stats* 😔")
-
-@bot.command(name='base64encode')
-async def encode_base64(ctx, *, text: str):
-    encoded = base64.b64encode(text.encode()).decode()
-    embed = discord.Embed(title="Base64 Encoder", color=0x000000)
-    embed.add_field(name="Original Text", value=text, inline=False)
-    embed.add_field(name="Encoded Text", value=encoded, inline=False)
-    embed.set_footer(text="Powered by Puro's Lab 🧪")
-    await ctx.send(embed=embed)
-
-@bot.command(name='base64decode')
-async def decode_base64(ctx, *, encoded: str):
-    try:
-        decoded = base64.b64decode(encoded.encode()).decode()
-        embed = discord.Embed(title="Base64 Decoder", color=0x000000)
-        embed.add_field(name="Encoded Text", value=encoded, inline=False)
-        embed.add_field(name="Decoded Text", value=decoded, inline=False)
-        embed.set_footer(text="Powered by Puro's Lab 🧪")
-        await ctx.send(embed=embed)
-    except:
-        await ctx.send("*Puro scratches his head* That doesn't look like valid base64...")
-
-@bot.command(name='genname')
-async def generate_name(ctx):
-    name = names.get_full_name()
-    embed = discord.Embed(title="Random Name Generator", color=0x000000)
-    embed.add_field(name="Generated Name", value=name, inline=False)
+@bot.tree.command(name="genname", description="Generate a custom name with a prefix")
+async def generate_name(interaction: discord.Interaction, prefix: str):
+    # Generate a random string of 6 characters (letters and numbers)
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    
+    # Combine prefix and suffix with underscore
+    generated_name = f"{prefix}_{suffix}"
+    
+    embed = discord.Embed(
+        title="Custom Name Generator",
+        color=0x000000
+    )
+    embed.add_field(name="Your Generated Name", value=f"`{generated_name}`", inline=False)
     embed.set_footer(text="Generated with love by Puro 🖤")
-    await ctx.send(embed=embed)
+    embed.set_author(name="Name Generator", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name='genpass')
-async def generate_password(ctx, length: int = 12):
+@bot.tree.command(name="genpass", description="Generate a secure password")
+async def generate_password(interaction: discord.Interaction, length: int = 16):
     if length < 8 or length > 32:
-        await ctx.send("*Puro suggests* Please choose a length between 8 and 32!")
+        await interaction.response.send_message("*Puro suggests* Please choose a length between 8 and 32!", ephemeral=True)
         return
     
-    # Generate a secure password using secrets module
+    # Generate a secure password
     alphabet = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(alphabet) for i in range(length))
+    password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    
+    # Create password strength indicators
+    has_upper = any(c.isupper() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_special = any(c in string.punctuation for c in password)
+    
+    strength = sum([has_upper, has_lower, has_digit, has_special])
+    strength_text = ["Weak 😟", "Moderate 🤔", "Strong 😊", "Very Strong 💪"][strength-1]
     
     # Send password in DM for security
-    embed = discord.Embed(title="Password Generator", color=0x000000)
-    embed.add_field(name="Generated Password", value=password, inline=False)
-    embed.set_footer(text="Keep it secret, keep it safe! 🔒")
-    await ctx.author.send(embed=embed)
-    await ctx.send("*Puro whispers* I've sent you a secure password in DM! 🤫")
+    try:
+        embed = discord.Embed(
+            title="Secure Password Generator",
+            description="Here's your secure password! Keep it safe! 🔒",
+            color=0x000000
+        )
+        embed.add_field(name="Generated Password", value=f"||`{password}`||", inline=False)
+        embed.add_field(name="Password Strength", value=strength_text, inline=True)
+        embed.add_field(name="Length", value=str(length), inline=True)
+        embed.set_footer(text="Keep it secret, keep it safe! 🔒")
+        embed.set_author(name="Password Generator", icon_url=bot.user.avatar.url)
+        
+        await interaction.user.send(embed=embed)
+        await interaction.response.send_message("*Puro whispers* I've sent you a secure password in DM! 🤫", ephemeral=True)
+    except:
+        await interaction.response.send_message("*Puro looks worried* I couldn't send you a DM! Please enable DMs from server members.", ephemeral=True)
 
-@bot.command(name='mccolors')
-async def minecraft_colors(ctx):
-    embed = discord.Embed(title="Minecraft Color Codes", color=0x000000)
-    for code, color in MINECRAFT_COLORS.items():
-        embed.add_field(name=code, value=color, inline=True)
-    embed.set_footer(text="Minecraft colors, Puro style! 🎨")
-    await ctx.send(embed=embed)
+@bot.tree.command(name="base64encode", description="Encode text to base64")
+async def encode_base64_cmd(interaction: discord.Interaction, text: str):
+    encoded = base64.b64encode(text.encode()).decode()
+    
+    embed = discord.Embed(
+        title="Base64 Encoder",
+        color=0x000000
+    )
+    embed.add_field(name="Original Text", value=f"```{text}```", inline=False)
+    embed.add_field(name="Encoded Text", value=f"```{encoded}```", inline=False)
+    embed.set_footer(text="Powered by Puro's Lab 🧪")
+    embed.set_author(name="Base64 Encoder", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="base64decode", description="Decode base64 text")
+async def decode_base64_cmd(interaction: discord.Interaction, encoded: str):
+    try:
+        decoded = base64.b64decode(encoded.encode()).decode()
+        embed = discord.Embed(
+            title="Base64 Decoder",
+            color=0x000000
+        )
+        embed.add_field(name="Encoded Text", value=f"```{encoded}```", inline=False)
+        embed.add_field(name="Decoded Text", value=f"```{decoded}```", inline=False)
+        embed.set_footer(text="Powered by Puro's Lab 🧪")
+        embed.set_author(name="Base64 Decoder", icon_url=bot.user.avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
+    except:
+        await interaction.response.send_message("*Puro scratches his head* That doesn't look like valid base64...", ephemeral=True)
+
+@bot.tree.command(name="help", description="View all available commands")
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="Puro's Command List",
+        description="Here are all the available commands! 🐺",
+        color=0x000000
+    )
+    
+    # Utility Commands
+    utility_cmds = """
+    `/base64encode` - Encode text to base64
+    `/base64decode` - Decode base64 text
+    `/genname` - Generate a custom name
+    `/genpass` - Generate a secure password
+    `/mccolors` - View Minecraft color codes
+    """
+    embed.add_field(name="🛠️ Utility", value=utility_cmds.strip(), inline=False)
+    
+    # Fun Commands
+    fun_cmds = """
+    `/transfur` - Get transfurred by Puro! (Requires Puro role)
+    `/comfort` - Get a comforting message when feeling down
+    """
+    embed.add_field(name="🎮 Fun", value=fun_cmds.strip(), inline=False)
+    
+    embed.set_footer(text="Use / to access commands! 💫")
+    embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
 
 # Run the bot
-bot.run(TOKEN)
+bot.run(os.getenv('DISCORD_TOKEN'))
