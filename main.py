@@ -548,6 +548,13 @@ class UserProfile:
             return achievement
         return None
 
+    def add_coins(self, amount):
+        """Add coins to the user's balance"""
+        self.puro_coins += amount
+        # Check for rich_puro achievement
+        if self.puro_coins >= 1000:
+            self.earn_badge("rich_puro")
+
 user_profiles = {}
 
 def get_user_profile(user_id):
@@ -1723,8 +1730,12 @@ async def on_message(message):
                 reward_coins = 50
                 reward_xp = 25
                 
-                profile.add_coins(reward_coins)
-                profile.add_xp(reward_xp)
+                profile.puro_coins += reward_coins  # Directly add coins
+                profile.add_xp(reward_xp)  # Use existing add_xp method
+                profile.guess_wins += 1  # Increment guess wins
+                
+                # Check achievements after winning
+                new_achievements = profile.check_achievements()
                 
                 embed = discord.Embed(
                     title="🎉 Correct Guess!",
@@ -1732,6 +1743,21 @@ async def on_message(message):
                     color=0x00FF00
                 )
                 await message.channel.send(embed=embed)
+                
+                # Show any new achievements
+                if new_achievements:
+                    for achievement in new_achievements:
+                        reward_embed = discord.Embed(
+                            title="🎉 Achievement Unlocked!",
+                            description=f"{achievement['emoji']} **{achievement['name']}**\n*{achievement['description']}*",
+                            color=0x00FF00
+                        )
+                        reward_embed.add_field(
+                            name="Rewards",
+                            value=f"🪙 {achievement['reward_coins']} PuroCoins\n✨ {achievement['reward_xp']} XP",
+                            inline=False
+                        )
+                        await message.channel.send(embed=reward_embed)
             elif guess < GUESS_GAME_CONFIG["current_number"]:
                 embed = discord.Embed(
                     description=f"*Puro shakes his head* {message.author.mention}, your guess is **too low**! Try a higher number!",
