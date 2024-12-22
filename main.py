@@ -64,6 +64,14 @@ MINECRAFT_COLORS = {
     "§f": {"name": "White", "color": 0xFFFFFF}
 }
 
+SOCIAL_LINKS = {
+    "YouTube": "https://www.youtube.com/@SentakuuGaming",
+    "Steam": "https://steamcommunity.com/id/Arionyx/",
+    "Telegram": "t.me/SentakuuGaming",
+    "Twitch": "https://www.twitch.tv/arionyxcz",
+    "Minecraft": "Arionyxx"
+}
+
 @bot.event
 async def on_ready():
     print(f'🐺 {bot.user} is ready to spread some latex love!')
@@ -250,6 +258,54 @@ async def help_command(interaction: discord.Interaction):
     
     embed.set_footer(text="Use / to access commands! 💫")
     embed.set_author(name="Command Help", icon_url=bot.user.avatar.url)
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="socials", description="View Sentakuu's social media profiles!")
+async def social_media(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="Sentakuu's Social Media",
+        description="Come hang out with me on other platforms! 🎮",
+        color=0x000000
+    )
+    
+    # YouTube with special formatting
+    embed.add_field(
+        name="<:Youtube:1320208846022643822> YouTube",
+        value=f"[SentakuuGaming]({SOCIAL_LINKS['YouTube']})",
+        inline=True
+    )
+    
+    # Twitch with stream note
+    embed.add_field(
+        name="<:Twitch:1320208844109910067> Twitch",
+        value=f"[arionyxcz]({SOCIAL_LINKS['Twitch']})\n*I stream sometimes!* 🎥",
+        inline=True
+    )
+    
+    # Steam
+    embed.add_field(
+        name="<:steam:1320208840507002920> Steam",
+        value=f"[Arionyx]({SOCIAL_LINKS['Steam']})",
+        inline=True
+    )
+    
+    # Telegram
+    embed.add_field(
+        name="<:Telegram:1320208842407280744> Telegram",
+        value=f"[Sentakuu Gaming]({SOCIAL_LINKS['Telegram']})",
+        inline=True
+    )
+    
+    # Minecraft
+    embed.add_field(
+        name="<:Minecraft:1320208838896386108> Minecraft",
+        value=f"`{SOCIAL_LINKS['Minecraft']}`",
+        inline=True
+    )
+    
+    embed.set_footer(text="Feel free to follow and say hi! 👋")
+    embed.set_author(name="Social Media Links", icon_url=bot.user.avatar.url)
     
     await interaction.response.send_message(embed=embed)
 
