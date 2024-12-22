@@ -264,25 +264,25 @@ BADGES = {
 BANNERS = {
     "default": {
         "name": "Laboratory",
-        "url": "https://example.com/banner/lab.png",  # Replace with actual banner URLs
+        "url": "https://media.discordapp.net/attachments/1184577147927277698/1184577149555298394/lab.png",
         "description": "The mysterious facility",
         "price": 0
     },
     "library": {
         "name": "Library",
-        "url": "https://example.com/banner/library.png",
+        "url": "https://media.discordapp.net/attachments/1184577147927277698/1184577149819531264/library.png",
         "description": "Where it all began",
         "price": 1000
     },
     "crystal": {
         "name": "Crystal Cave",
-        "url": "https://example.com/banner/crystal.png",
+        "url": "https://media.discordapp.net/attachments/1184577147927277698/1184577150075564122/crystal.png",
         "description": "Shimmering crystals everywhere",
         "price": 1500
     },
     "dark_latex": {
         "name": "Dark Latex",
-        "url": "https://example.com/banner/dark_latex.png",
+        "url": "https://media.discordapp.net/attachments/1184577147927277698/1184577150331789332/dark_latex.png",
         "description": "Home of the dark latex beasts",
         "price": 2000
     }
@@ -1430,12 +1430,42 @@ async def set_title(interaction: discord.Interaction, title: str):
     elif title_id == "puro_bestie" and profile.level < 10:
         await interaction.response.send_message("You need to reach level 10 to use this title!", ephemeral=True)
         return
+    elif title_id == "latex_friend" and profile.games_won < 10:
+        await interaction.response.send_message("You need to win 10 games to use this title!", ephemeral=True)
+        return
     elif title_id == "rich_collector" and len(profile.inventory) < 5:
         await interaction.response.send_message("You need to own 5 items to use this title!", ephemeral=True)
         return
     
     profile.title = title_id
     await interaction.response.send_message(f"Your title has been changed to **{TITLES[title_id]['name']}**!")
+
+@set_title.autocomplete('title')
+async def title_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[app_commands.Choice[str]]:
+    profile = get_user_profile(interaction.user.id)
+    titles = []
+    for title_id, title in TITLES.items():
+        # Check requirements
+        available = True
+        if title_id == "changed_fan" and profile.level < 5:
+            available = False
+        elif title_id == "puro_bestie" and profile.level < 10:
+            available = False
+        elif title_id == "latex_friend" and profile.games_won < 10:
+            available = False
+        elif title_id == "rich_collector" and len(profile.inventory) < 5:
+            available = False
+        
+        name = f"{title['name']} - {title['description']}"
+        if not available:
+            name += " (🔒 Locked)"
+        
+        if current.lower() in name.lower():
+            titles.append(app_commands.Choice(name=name, value=title_id))
+    return titles[:25]
 
 @bot.tree.command(name="banners", description="View and buy profile banners!")
 async def view_banners(interaction: discord.Interaction):
@@ -1507,6 +1537,21 @@ async def set_banner(interaction: discord.Interaction, banner: str):
         await interaction.response.send_message(embed=embed)
     else:
         await interaction.response.send_message("You don't own this banner yet! Use `/buybanner` to purchase it.", ephemeral=True)
+
+@set_banner.autocomplete('banner')
+async def banner_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[app_commands.Choice[str]]:
+    profile = get_user_profile(interaction.user.id)
+    banners = []
+    for banner_id, banner in BANNERS.items():
+        name = f"{banner['name']} - {banner['description']}"
+        if banner_id not in profile.owned_banners:
+            name += " (🔒 Not Owned)"
+        if current.lower() in name.lower():
+            banners.append(app_commands.Choice(name=name, value=banner_id))
+    return banners[:25]
 
 @bot.tree.command(name="daily", description="Claim your daily reward!")
 async def daily_reward(interaction: discord.Interaction):
